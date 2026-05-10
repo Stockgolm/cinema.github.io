@@ -15,7 +15,7 @@
     <video id="player" controls playsinline></video>
     
     <script>
-        // Розгортаємо вікно та зафарбовуємо шапку в чорний
+        // Просто розгортаємо шторку, без агресивного авто-фулскріну
         Telegram.WebApp.expand(); 
         Telegram.WebApp.setHeaderColor('#000000');
         Telegram.WebApp.setBackgroundColor('#000000');
@@ -24,41 +24,44 @@
         const videoUrl = urlParams.get('v');
         const player = document.getElementById('player');
 
-        // Функція, яка ховає шапку Telegram
-        const hideTelegramHeader = () => {
-            try {
-                Telegram.WebApp.requestFullscreen();
-            } catch (e) {
-                console.log("Повний екран Telegram не підтримується:", e);
+        // Ловимо ФІЗИЧНЕ натискання на кнопку Повного Екрану в плеєрі
+        const handleFullscreen = () => {
+            // Якщо плеєр перейшов у повний екран
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                // Передаємо команду Телеграму сховати свою панель!
+                try {
+                    Telegram.WebApp.requestFullscreen();
+                } catch (e) {
+                    console.log(e);
+                }
+            } else {
+                // Якщо користувач вийшов з повного екрану - повертаємо панель Телеграму
+                try {
+                    Telegram.WebApp.exitFullscreen();
+                } catch (e) {
+                    console.log(e);
+                }
             }
         };
 
-        // Слухаємо кліки по плеєру!
-        // Як тільки ви натиснете Play або кнопку Повного екрану - шапка Telegram зникне
-        player.addEventListener('play', hideTelegramHeader);
-        player.addEventListener('fullscreenchange', hideTelegramHeader);
-        player.addEventListener('webkitfullscreenchange', hideTelegramHeader);
+        // Вішаємо слухачі на зміни повного екрану
+        player.addEventListener('fullscreenchange', handleFullscreen);
+        player.addEventListener('webkitfullscreenchange', handleFullscreen);
         
         if (videoUrl) {
             player.volume = 0.15;
 
             // Якщо браузер ПК і це m3u8 потік - використовуємо HLS.js
             if (videoUrl.includes('.m3u8') && Hls.isSupported()) {
-                const hls = new Hls({
-                    maxBufferLength: 30, 
-                    maxMaxBufferLength: 600
-                });
+                const hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 600 });
                 hls.loadSource(videoUrl);
                 hls.attachMedia(player);
                 hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    // Пробуємо автозапуск (якщо заблокує - ви просто натиснете Play самі)
-                    player.play().catch(e => console.log("Автозапуск заблоковано:", e));
+                    player.play().catch(e => console.log(e));
                 });
-            } 
-            // Якщо це телефон (iPhone/Android) або звичайний mp4
-            else {
+            } else {
                 player.src = videoUrl;
-                player.play().catch(e => console.log("Автозапуск заблоковано:", e));
+                player.play().catch(e => console.log(e));
             }
         }
     </script>
