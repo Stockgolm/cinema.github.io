@@ -19,17 +19,25 @@
         Telegram.WebApp.expand(); 
         Telegram.WebApp.setHeaderColor('#000000');
         Telegram.WebApp.setBackgroundColor('#000000');
-        
-        // Автоматичний повний екран (якщо підтримується)
-        try {
-            Telegram.WebApp.requestFullscreen();
-        } catch (e) {
-            console.log(e);
-        }
 
         const urlParams = new URLSearchParams(window.location.search);
         const videoUrl = urlParams.get('v');
         const player = document.getElementById('player');
+
+        // Функція, яка ховає шапку Telegram
+        const hideTelegramHeader = () => {
+            try {
+                Telegram.WebApp.requestFullscreen();
+            } catch (e) {
+                console.log("Повний екран Telegram не підтримується:", e);
+            }
+        };
+
+        // Слухаємо кліки по плеєру!
+        // Як тільки ви натиснете Play або кнопку Повного екрану - шапка Telegram зникне
+        player.addEventListener('play', hideTelegramHeader);
+        player.addEventListener('fullscreenchange', hideTelegramHeader);
+        player.addEventListener('webkitfullscreenchange', hideTelegramHeader);
         
         if (videoUrl) {
             player.volume = 0.15;
@@ -43,10 +51,11 @@
                 hls.loadSource(videoUrl);
                 hls.attachMedia(player);
                 hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    // Пробуємо автозапуск (якщо заблокує - ви просто натиснете Play самі)
                     player.play().catch(e => console.log("Автозапуск заблоковано:", e));
                 });
             } 
-            // Якщо це телефон (iPhone/Android підтримують нативно) або звичайний mp4
+            // Якщо це телефон (iPhone/Android) або звичайний mp4
             else {
                 player.src = videoUrl;
                 player.play().catch(e => console.log("Автозапуск заблоковано:", e));
