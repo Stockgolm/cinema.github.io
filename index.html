@@ -2,68 +2,135 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- Підключаємо Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Підключаємо HLS.js для підтримки відео на ПК -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; }
+        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
         video { width: 100%; height: 100%; outline: none; }
+        
+        /* Панель вибору якості поверх відео */
+        #quality-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        /* Показуємо панель, коли користувач взаємодіє з екраном */
+        body:hover #quality-selector, body:active #quality-selector {
+            opacity: 1;
+        }
+
+        .q-btn {
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            backdrop-filter: blur(5px);
+            transition: 0.2s;
+        }
+
+        .q-btn:hover { background: rgba(255, 255, 255, 0.2); }
+        .q-btn.active { background: #e50914; border-color: #e50914; color: white; }
     </style>
 </head>
 <body>
     <video id="player" controls playsinline></video>
     
+    <!-- Тут будуть створюватись кнопки 1080p, 720p... -->
+    <div id="quality-selector"></div>
+    
     <script>
-        // Просто розгортаємо шторку, без агресивного авто-фулскріну
         Telegram.WebApp.expand(); 
         Telegram.WebApp.setHeaderColor('#000000');
         Telegram.WebApp.setBackgroundColor('#000000');
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const videoUrl = urlParams.get('v');
         const player = document.getElementById('player');
+        const qSelector = document.getElementById('quality-selector');
+        let hls = null;
+        let qualities = {};
 
-        // Ловимо ФІЗИЧНЕ натискання на кнопку Повного Екрану в плеєрі
-        const handleFullscreen = () => {
-            // Якщо плеєр перейшов у повний екран
-            if (document.fullscreenElement || document.webkitFullscreenElement) {
-                // Передаємо команду Телеграму сховати свою панель!
-                try {
-                    Telegram.WebApp.requestFullscreen();
-                } catch (e) {
-                    console.log(e);
-                }
+        // Отримуємо запаковані дані від бота
+        const urlParams = new URLSearchParams(window.location.search);
+        const dataParam = urlParams.get('data');
+        
+        // Функція зміни якості БЕЗ втрати часу
+        const loadVideo = (label, url, preserveTime = true) => {
+            const currentTime = preserveTime ? player.currentTime : 0;
+            const isPlaying = !player.paused && currentTime > 0;
+
+            if (hls) {
+                hls.destroy();
+                hls = null;
+            }
+
+            if (url.includes('.m3u8') && Hls.isSupported()) {
+                hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 600 });
+                hls.loadSource(url);
+                hls.attachMedia(player);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    player.currentTime = currentTime;
+                    if (isPlaying) player.play().catch(e => console.log(e));
+                });
             } else {
-                // Якщо користувач вийшов з повного екрану - повертаємо панель Телеграму
-                try {
-                    Telegram.WebApp.exitFullscreen();
-                } catch (e) {
-                    console.log(e);
+                player.src = url;
+                player.currentTime = currentTime;
+                if (isPlaying) player.play().catch(e => console.log(e));
+            }
+
+            // Робимо активну кнопку червоною
+            document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
+            const activeBtn = document.getElementById('btn-' + label);
+            if (activeBtn) activeBtn.classList.add('active');
+        };
+
+        if (dataParam) {
+            try {
+                // Розшифровуємо Base64 JSON
+                qualities = JSON.parse(atob(dataParam));
+                let defaultLabel = null;
+                
+                // Малюємо кнопки для кожної якості
+                for (const [label, url] of Object.entries(qualities)) {
+                    if (!defaultLabel) defaultLabel = label; // Беремо першу (найкращу)
+                    
+                    const btn = document.createElement('button');
+                    btn.className = 'q-btn';
+                    btn.id = 'btn-' + label;
+                    btn.innerText = label;
+                    btn.onclick = () => loadVideo(label, url, true);
+                    qSelector.appendChild(btn);
                 }
+
+                // Запускаємо відео з найкращою якістю
+                if (defaultLabel) {
+                    player.volume = 0.15;
+                    loadVideo(defaultLabel, qualities[defaultLabel], false);
+                }
+            } catch (e) {
+                console.error("Помилка розшифровки:", e);
+            }
+        }
+
+        // Керування шапкою (сховати при повному екрані)
+        const handleFullscreen = () => {
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                try { Telegram.WebApp.requestFullscreen(); } catch (e) {}
+            } else {
+                try { Telegram.WebApp.exitFullscreen(); } catch (e) {}
             }
         };
 
-        // Вішаємо слухачі на зміни повного екрану
         player.addEventListener('fullscreenchange', handleFullscreen);
         player.addEventListener('webkitfullscreenchange', handleFullscreen);
-        
-        if (videoUrl) {
-            player.volume = 0.15;
-
-            // Якщо браузер ПК і це m3u8 потік - використовуємо HLS.js
-            if (videoUrl.includes('.m3u8') && Hls.isSupported()) {
-                const hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 600 });
-                hls.loadSource(videoUrl);
-                hls.attachMedia(player);
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    player.play().catch(e => console.log(e));
-                });
-            } else {
-                player.src = videoUrl;
-                player.play().catch(e => console.log(e));
-            }
-        }
     </script>
 </body>
 </html>
