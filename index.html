@@ -11,11 +11,17 @@
 </head>
 <body>
     <video id="player" controls autoplay playsinline></video>
-    <script>
-        // Команда Telegram для автоматичного розгортання шторки на всю висоту!
+        <script>
+        // Розгортаємо шторку (для телефонів)
         Telegram.WebApp.expand(); 
         
-        // Дістаємо посилання на відео з URL, наприклад: index.html?v=http...
+        // Нова фішка Telegram: примусовий справжній повний екран!
+        try {
+            Telegram.WebApp.requestFullscreen();
+        } catch (e) {
+            console.log("Повний екран не підтримується в цій версії");
+        }
+        
         const urlParams = new URLSearchParams(window.location.search);
         const videoUrl = urlParams.get('v');
         
@@ -23,5 +29,6 @@
             document.getElementById('player').src = videoUrl;
         }
     </script>
+
 </body>
 </html>
