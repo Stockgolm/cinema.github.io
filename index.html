@@ -5,30 +5,71 @@
     <!-- Підключаємо Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; }
-        video { width: 100%; height: 100%; outline: none; }
+        body, html { 
+            margin: 0; padding: 0; height: 100%; 
+            background: #000; overflow: hidden; 
+            display: flex; justify-content: center; align-items: center; 
+        }
+        video { 
+            width: 100%; height: 100%; outline: none; 
+            display: none; /* Приховуємо відео до кліку */
+        }
+        #start-btn {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #e50914; /* Червона кнопка в стилі Netflix */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 10;
+            font-family: sans-serif;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <video id="player" controls autoplay playsinline></video>
-        <script>
-        // Розгортаємо шторку (для телефонів)
+    
+    <button id="start-btn">▶ Розгорнути та Дивитись</button>
+    <video id="player" controls playsinline></video>
+    
+    <script>
         Telegram.WebApp.expand(); 
-        
-        // Нова фішка Telegram: примусовий справжній повний екран!
-        try {
-            Telegram.WebApp.requestFullscreen();
-        } catch (e) {
-            console.log("Повний екран не підтримується в цій версії");
-        }
         
         const urlParams = new URLSearchParams(window.location.search);
         const videoUrl = urlParams.get('v');
+        const player = document.getElementById('player');
+        const startBtn = document.getElementById('start-btn');
         
         if (videoUrl) {
-            document.getElementById('player').src = videoUrl;
+            player.src = videoUrl;
         }
-    </script>
 
+        // Вішаємо дію на клік користувача
+        startBtn.addEventListener('click', () => {
+            // 1. Просимо Telegram розгорнути вікно Web App на весь монітор
+            try {
+                Telegram.WebApp.requestFullscreen();
+            } catch (e) {
+                console.log(e);
+            }
+            
+            // 2. Додатково просимо сам браузер зробити відео на весь екран (надійно для ПК)
+            try {
+                if (player.requestFullscreen) {
+                    player.requestFullscreen();
+                } else if (player.webkitRequestFullscreen) {
+                    player.webkitRequestFullscreen();
+                }
+            } catch (e) {
+                console.log(e);
+            }
+
+            // Ховаємо кнопку і показуємо плеєр
+            startBtn.style.display = 'none';
+            player.style.display = 'block';
+            player.play();
+        });
+    </script>
 </body>
 </html>
