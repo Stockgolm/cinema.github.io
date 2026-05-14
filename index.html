@@ -1,136 +1,351 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Player</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
-        video { width: 100%; height: 100%; outline: none; }
-        
-        /* Панель вибору якості поверх відео */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body, html {
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #fff;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            outline: none;
+            background: #000;
+        }
+
+        /* ── Loader ── */
+        #loader {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.5);
+            pointer-events: none;
+            transition: opacity 0.25s;
+        }
+        #loader.hidden { opacity: 0; }
+
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Error overlay ── */
+        #error-overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: rgba(0,0,0,0.85);
+            text-align: center;
+            padding: 24px;
+        }
+        #error-overlay.visible { display: flex; }
+        #error-icon { font-size: 42px; color: rgba(255,255,255,0.5); line-height: 1; }
+        #no-data-icon { font-size: 42px; color: rgba(255,255,255,0.35); line-height: 1; }
+        #error-msg { font-size: 15px; color: rgba(255,255,255,0.8); max-width: 260px; line-height: 1.5; }
+        #retry-btn {
+            margin-top: 4px;
+            padding: 9px 22px;
+            border-radius: 8px;
+            border: none;
+            background: #e50914;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* ── Quality panel ── */
         #quality-selector {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 100;
+            top: 16px;
+            right: 16px;
             display: flex;
-            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 6px;
+            max-width: calc(100% - 32px);
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.3s;
+            z-index: 10;
         }
-        
-        /* Показуємо панель, коли користувач взаємодіє з екраном */
-        body:hover #quality-selector, body:active #quality-selector {
-            opacity: 1;
-        }
+        #quality-selector.visible { opacity: 1; }
 
         .q-btn {
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 8px 12px;
-            border-radius: 6px;
+            background: rgba(0,0,0,0.65);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.25);
+            padding: 6px 13px;
+            border-radius: 7px;
             cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            backdrop-filter: blur(5px);
-            transition: 0.2s;
+            font-size: 13px;
+            font-weight: 600;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            transition: background 0.15s, border-color 0.15s;
+            touch-action: manipulation;
+            user-select: none;
         }
+        .q-btn:hover { background: rgba(255,255,255,0.18); }
+        .q-btn.active { background: #e50914; border-color: #e50914; }
 
-        .q-btn:hover { background: rgba(255, 255, 255, 0.2); }
-        .q-btn.active { background: #e50914; border-color: #e50914; color: white; }
+        /* ── No-data message ── */
+        #no-data {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 10px;
+            color: rgba(255,255,255,0.7);
+            font-size: 15px;
+        }
+        #no-data.visible { display: flex; }
     </style>
 </head>
 <body>
-    <video id="player" controls playsinline></video>
-    
-    <!-- Тут будуть створюватись кнопки 1080p, 720p... -->
+<div id="wrapper">
+    <video id="player" controls playsinline preload="metadata"></video>
+
+    <div id="loader"><div class="spinner"></div></div>
+
+    <div id="error-overlay">
+        <i id="error-icon" class="ti ti-alert-triangle" aria-hidden="true"></i>
+        <p id="error-msg">Не вдалося завантажити відео</p>
+        <button id="retry-btn">Спробувати знову</button>
+    </div>
+
+    <div id="no-data">
+        <i id="no-data-icon" class="ti ti-video-off" aria-hidden="true"></i>
+        <span>Відео не знайдено</span>
+    </div>
+
     <div id="quality-selector"></div>
-    
-    <script>
-        Telegram.WebApp.expand(); 
-        Telegram.WebApp.setHeaderColor('#000000');
-        Telegram.WebApp.setBackgroundColor('#000000');
+</div>
 
-        const player = document.getElementById('player');
-        const qSelector = document.getElementById('quality-selector');
-        let hls = null;
-        let qualities = {};
+<script>
+(function () {
+    /* ── Telegram init ── */
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+        tg.expand();
+        tg.setHeaderColor('#000000');
+        tg.setBackgroundColor('#000000');
+    }
 
-        // Отримуємо запаковані дані від бота
-        const urlParams = new URLSearchParams(window.location.search);
-        const dataParam = urlParams.get('data');
-        
-        // Функція зміни якості БЕЗ втрати часу
-        const loadVideo = (label, url, preserveTime = true) => {
-            const currentTime = preserveTime ? player.currentTime : 0;
-            const isPlaying = !player.paused && currentTime > 0;
+    /* ── DOM refs ── */
+    const player      = document.getElementById('player');
+    const loader      = document.getElementById('loader');
+    const errorOv     = document.getElementById('error-overlay');
+    const errorMsg    = document.getElementById('error-msg');
+    const retryBtn    = document.getElementById('retry-btn');
+    const noData      = document.getElementById('no-data');
+    const qSelector   = document.getElementById('quality-selector');
 
-            if (hls) {
-                hls.destroy();
-                hls = null;
-            }
+    /* ── State ── */
+    let hls             = null;
+    let qualities       = {};
+    let currentLabel    = null;
+    let uiTimer         = null;
+    let isLoading       = false;
 
-            if (url.includes('.m3u8') && Hls.isSupported()) {
-                hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 600 });
-                hls.loadSource(url);
-                hls.attachMedia(player);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    player.currentTime = currentTime;
-                    if (isPlaying) player.play().catch(e => console.log(e));
-                });
-            } else {
-                player.src = url;
-                player.currentTime = currentTime;
-                if (isPlaying) player.play().catch(e => console.log(e));
-            }
+    /* ── Parse URL data ── */
+    const urlParams = new URLSearchParams(window.location.search);
+    const dataParam = urlParams.get('data');
 
-            // Робимо активну кнопку червоною
-            document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
-            const activeBtn = document.getElementById('btn-' + label);
-            if (activeBtn) activeBtn.classList.add('active');
-        };
+    if (!dataParam) {
+        noData.classList.add('visible');
+        loader.classList.add('hidden');
+        return;
+    }
 
-        if (dataParam) {
-            try {
-                // Розшифровуємо Base64 JSON
-                qualities = JSON.parse(atob(dataParam));
-                let defaultLabel = null;
-                
-                // Малюємо кнопки для кожної якості
-                for (const [label, url] of Object.entries(qualities)) {
-                    if (!defaultLabel) defaultLabel = label; // Беремо першу (найкращу)
-                    
-                    const btn = document.createElement('button');
-                    btn.className = 'q-btn';
-                    btn.id = 'btn-' + label;
-                    btn.innerText = label;
-                    btn.onclick = () => loadVideo(label, url, true);
-                    qSelector.appendChild(btn);
-                }
+    try {
+        qualities = JSON.parse(atob(dataParam));
+        if (!qualities || typeof qualities !== 'object' || !Object.keys(qualities).length) {
+            throw new Error('empty');
+        }
+    } catch (e) {
+        showError('Невірний формат даних');
+        return;
+    }
 
-                // Запускаємо відео з найкращою якістю
-                if (defaultLabel) {
-                    player.volume = 0.15;
-                    loadVideo(defaultLabel, qualities[defaultLabel], false);
-                }
-            } catch (e) {
-                console.error("Помилка розшифровки:", e);
-            }
+    /* ── Build quality buttons ── */
+    for (const label of Object.keys(qualities)) {
+        const btn = document.createElement('button');
+        btn.className  = 'q-btn';
+        btn.id         = 'btn-' + label;
+        btn.textContent = label;
+        btn.addEventListener('click', () => loadVideo(label, true));
+        qSelector.appendChild(btn);
+    }
+
+    /* ── Initial load ── */
+    const firstLabel = Object.keys(qualities)[0];
+    player.volume = 0.15;
+    loadVideo(firstLabel, false);
+
+    /* ── Core: load video at quality label ── */
+    function loadVideo(label, preserveTime = true) {
+        const url = qualities[label];
+        if (!url) return;
+
+        const savedTime = preserveTime ? player.currentTime : 0;
+        const wasPlaying = preserveTime && !player.paused;
+
+        currentLabel = label;
+        setLoading(true);
+        hideError();
+
+        if (hls) {
+            hls.destroy();
+            hls = null;
         }
 
-        // Керування шапкою (сховати при повному екрані)
-        const handleFullscreen = () => {
-            if (document.fullscreenElement || document.webkitFullscreenElement) {
-                try { Telegram.WebApp.requestFullscreen(); } catch (e) {}
-            } else {
-                try { Telegram.WebApp.exitFullscreen(); } catch (e) {}
-            }
-        };
+        const isHls = url.includes('.m3u8');
 
-        player.addEventListener('fullscreenchange', handleFullscreen);
-        player.addEventListener('webkitfullscreenchange', handleFullscreen);
-    </script>
+        if (isHls && Hls.isSupported()) {
+            hls = new Hls({
+                maxBufferLength:    30,
+                maxMaxBufferLength: 600,
+                enableWorker:       true,
+            });
+
+            hls.loadSource(url);
+            hls.attachMedia(player);
+
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                restorePlayback(savedTime, wasPlaying);
+            });
+
+            hls.on(Hls.Events.ERROR, (_evt, data) => {
+                if (data.fatal) {
+                    const msg = data.type === Hls.ErrorTypes.NETWORK_ERROR
+                        ? 'Помилка мережі. Перевірте з\'єднання.'
+                        : 'Помилка відтворення потоку.';
+                    showError(msg);
+                }
+            });
+
+        } else if (isHls && player.canPlayType('application/vnd.apple.mpegurl')) {
+            /* Safari native HLS */
+            player.src = url;
+            player.addEventListener('loadedmetadata', () => restorePlayback(savedTime, wasPlaying), { once: true });
+        } else {
+            /* Direct MP4 / WebM */
+            player.src = url;
+            player.addEventListener('loadedmetadata', () => restorePlayback(savedTime, wasPlaying), { once: true });
+        }
+
+        updateActiveBtn(label);
+    }
+
+    function restorePlayback(time, shouldPlay) {
+        if (time > 0) player.currentTime = time;
+        if (shouldPlay) {
+            player.play().catch(() => {});
+        }
+    }
+
+    /* ── Quality button highlight ── */
+    function updateActiveBtn(label) {
+        document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
+        const btn = document.getElementById('btn-' + label);
+        if (btn) btn.classList.add('active');
+    }
+
+    /* ── Loader visibility ── */
+    function setLoading(on) {
+        isLoading = on;
+        loader.classList.toggle('hidden', !on);
+    }
+
+    /* ── Error overlay ── */
+    function showError(msg) {
+        setLoading(false);
+        errorMsg.textContent = msg || 'Не вдалося завантажити відео';
+        errorOv.classList.add('visible');
+    }
+
+    function hideError() {
+        errorOv.classList.remove('visible');
+    }
+
+    retryBtn.addEventListener('click', () => {
+        if (currentLabel) loadVideo(currentLabel, false);
+    });
+
+    /* ── Player events → loader state ── */
+    player.addEventListener('waiting',  () => setLoading(true));
+    player.addEventListener('playing',  () => setLoading(false));
+    player.addEventListener('canplay',  () => setLoading(false));
+    player.addEventListener('loadstart',() => setLoading(true));
+
+    player.addEventListener('error', () => {
+        const code = player.error?.code;
+        const msgs = {
+            1: 'Завантаження перервано.',
+            2: 'Помилка мережі.',
+            3: 'Помилка декодування.',
+            4: 'Формат не підтримується.',
+        };
+        showError(msgs[code] || 'Невідома помилка.');
+    });
+
+    /* ── Touch/click → show quality panel briefly ── */
+    function showQuality() {
+        qSelector.classList.add('visible');
+        clearTimeout(uiTimer);
+        uiTimer = setTimeout(() => qSelector.classList.remove('visible'), 3000);
+    }
+
+    document.addEventListener('touchstart', showQuality, { passive: true });
+    document.addEventListener('click',      showQuality);
+
+    /* ── Fullscreen ↔ Telegram fullscreen sync ── */
+    function onFullscreenChange() {
+        const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        try {
+            if (inFs) tg?.requestFullscreen?.();
+            else       tg?.exitFullscreen?.();
+        } catch (_) {}
+    }
+
+    player.addEventListener('fullscreenchange',       onFullscreenChange);
+    player.addEventListener('webkitfullscreenchange', onFullscreenChange);
+})();
+</script>
 </body>
 </html>
