@@ -45,7 +45,7 @@
             transition: opacity 0.25s;
             z-index: 10;
         }
-        #loader.hidden { opacity: 0; pointer-events: none; }
+        #loader.hidden { opacity: 0; }
         .spinner {
             width: 48px; height: 48px;
             border: 3px solid rgba(255,255,255,0.15);
@@ -55,7 +55,7 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ── Skip feedback ── */
+        /* ── Skip flash ── */
         .skip-flash {
             position: absolute;
             top: 50%;
@@ -66,28 +66,22 @@
             gap: 6px;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.25s;
+            transition: opacity 0.2s;
             z-index: 15;
         }
         .skip-flash.show { opacity: 1; }
-        .skip-flash i { font-size: 36px; }
-        .skip-flash span { font-size: 12px; font-weight: 600; }
-        #skip-back  { left: 15%; }
-        #skip-fwd   { right: 15%; }
+        .skip-flash i    { font-size: 38px; filter: drop-shadow(0 1px 4px rgba(0,0,0,0.6)); }
+        .skip-flash span { font-size: 13px; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+        #skip-back { left: 12%; }
+        #skip-fwd  { right: 12%; }
 
         /* ── Error overlay ── */
         #error-overlay {
-            position: absolute;
-            inset: 0;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            background: rgba(0,0,0,0.88);
-            text-align: center;
-            padding: 32px;
-            z-index: 50;
+            position: absolute; inset: 0;
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 12px; background: rgba(0,0,0,0.88);
+            text-align: center; padding: 32px; z-index: 50;
         }
         #error-overlay.visible { display: flex; }
         .ov-icon { font-size: 44px; color: rgba(255,255,255,0.4); }
@@ -104,8 +98,8 @@
         #no-data {
             position: absolute; inset: 0;
             display: none; flex-direction: column;
-            align-items: center; justify-content: center; gap: 12px;
-            z-index: 50;
+            align-items: center; justify-content: center;
+            gap: 12px; z-index: 50;
         }
         #no-data.visible { display: flex; }
         #no-data span { font-size: 15px; color: rgba(255,255,255,0.5); }
@@ -114,8 +108,8 @@
         #controls {
             position: absolute;
             bottom: 0; left: 0; right: 0;
-            padding: 0 0 6px;
-            background: linear-gradient(transparent, rgba(0,0,0,0.82) 50%);
+            padding: 0 0 8px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.85) 55%);
             opacity: 0;
             transition: opacity 0.3s;
             z-index: 20;
@@ -124,7 +118,7 @@
 
         /* Progress */
         #progress-wrap {
-            padding: 12px 10px 8px;
+            padding: 14px 12px 8px;
             cursor: pointer;
             touch-action: none;
         }
@@ -135,8 +129,7 @@
             position: relative;
             transition: height 0.15s;
         }
-        #progress-wrap:hover #progress-track,
-        body.is-touch #progress-track { height: 5px; }
+        #controls:hover #progress-track { height: 5px; }
 
         #progress-buf {
             position: absolute; left: 0; top: 0; height: 100%;
@@ -151,79 +144,73 @@
             position: absolute; top: 50%;
             transform: translate(-50%, -50%) scale(0);
             width: 14px; height: 14px;
-            background: #fff; border-radius: 50%; left: 0%;
-            transition: transform 0.15s; pointer-events: none;
+            background: #fff; border-radius: 50%;
+            left: 0%; pointer-events: none;
+            transition: transform 0.15s;
         }
-        #progress-wrap:hover #progress-thumb,
-        body.is-touch #progress-thumb { transform: translate(-50%, -50%) scale(1); }
+        #controls:hover #progress-thumb { transform: translate(-50%, -50%) scale(1); }
 
         /* Button row */
         #btn-row {
-            display: flex; align-items: center;
-            gap: 0; padding: 0 6px 2px;
+            display: flex;
+            align-items: center;
+            padding: 0 4px 0;
+            gap: 0;
+            min-height: 44px;
         }
 
         .ctrl-btn {
             background: none; border: none; color: #fff;
-            cursor: pointer; padding: 7px 8px;
+            cursor: pointer;
+            min-width: 40px; height: 40px;
+            padding: 0 6px;
             border-radius: 6px;
             display: flex; align-items: center; justify-content: center;
             font-size: 22px; line-height: 1;
             touch-action: manipulation;
             transition: background 0.12s;
             flex-shrink: 0;
-            -webkit-tap-highlight-color: transparent;
         }
         .ctrl-btn:hover  { background: rgba(255,255,255,0.1); }
-        .ctrl-btn:active { background: rgba(255,255,255,0.18); }
+        .ctrl-btn:active { background: rgba(255,255,255,0.2); }
 
         #time-display {
             font-size: 12px;
             color: rgba(255,255,255,0.85);
-            letter-spacing: 0.02em;
             white-space: nowrap;
             padding: 0 6px;
+            flex-shrink: 0;
         }
 
-        /* Volume section */
+        .spacer { flex: 1; min-width: 8px; }
+
+        /* Volume */
         #vol-wrap {
             display: flex; align-items: center;
-            gap: 4px; flex-shrink: 0;
+            flex-shrink: 0;
         }
         #vol-slider-wrap {
-            width: 0;
-            overflow: hidden;
+            width: 0; overflow: hidden;
             transition: width 0.25s;
-            display: flex;
-            align-items: center;
+            display: flex; align-items: center;
         }
-        #vol-wrap:hover #vol-slider-wrap,
-        #vol-wrap:focus-within #vol-slider-wrap { width: 72px; }
+        #vol-wrap:hover #vol-slider-wrap { width: 72px; }
         #vol-slider {
-            -webkit-appearance: none;
-            appearance: none;
+            -webkit-appearance: none; appearance: none;
             width: 68px; height: 3px;
             background: rgba(255,255,255,0.3);
             border-radius: 2px; outline: none;
-            cursor: pointer;
-            accent-color: #e50914;
+            cursor: pointer; accent-color: #e50914;
         }
         #vol-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 13px; height: 13px;
-            border-radius: 50%;
-            background: #fff;
-            cursor: pointer;
+            border-radius: 50%; background: #fff; cursor: pointer;
         }
         #vol-slider::-moz-range-thumb {
             width: 13px; height: 13px;
-            border-radius: 50%;
-            background: #fff;
-            border: none;
-            cursor: pointer;
+            border-radius: 50%; background: #fff; border: none; cursor: pointer;
         }
-
-        .spacer { flex: 1; }
 
         /* Quality button */
         #quality-btn {
@@ -237,17 +224,17 @@
             transition: background 0.12s, border-color 0.12s;
             white-space: nowrap; flex-shrink: 0;
             display: flex; align-items: center; gap: 4px;
-            -webkit-tap-highlight-color: transparent;
+            height: 30px;
         }
-        #quality-btn:hover { background: rgba(255,255,255,0.18); }
+        #quality-btn:hover { background: rgba(255,255,255,0.2); }
         #quality-btn.open  { background: #e50914; border-color: #e50914; }
         #quality-btn .q-arrow { font-size: 13px; transition: transform 0.2s; }
         #quality-btn.open .q-arrow { transform: rotate(180deg); }
 
-        /* Quality popup */
+        /* Quality menu */
         #quality-menu {
             position: absolute;
-            bottom: 58px; right: 8px;
+            bottom: 62px; right: 8px;
             background: rgba(15,15,15,0.97);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 10px; overflow: hidden;
@@ -272,30 +259,45 @@
             color: rgba(255,255,255,0.65);
             text-align: left; width: 100%;
             transition: background 0.1s, color 0.1s;
-            -webkit-tap-highlight-color: transparent;
         }
         .qm-item:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.06); }
-        .qm-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+        .qm-item:hover  { background: rgba(255,255,255,0.07); color: #fff; }
         .qm-item.active { color: #fff; }
         .qm-check { font-size: 15px; color: #e50914; visibility: hidden; flex-shrink: 0; }
         .qm-item.active .qm-check { visibility: visible; }
+
+        /* Keyboard hint */
+        #kb-hint {
+            position: absolute;
+            bottom: 70px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.75);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: 13px; color: rgba(255,255,255,0.8);
+            pointer-events: none;
+            opacity: 0; transition: opacity 0.2s;
+            white-space: nowrap; z-index: 25;
+        }
+        #kb-hint.show { opacity: 1; }
     </style>
 </head>
 <body>
 <div id="wrapper">
-    <video id="player" playsinline webkit-playsinline preload="metadata"></video>
+    <video id="player" playsinline webkit-playsinline x5-playsinline preload="metadata"></video>
 
     <div id="loader"><div class="spinner"></div></div>
 
-    <!-- Skip indicators -->
     <div class="skip-flash" id="skip-back">
-        <i class="ti ti-rotate-clockwise-2" style="transform:scaleX(-1)"></i>
+        <i class="ti ti-rewind-10"></i>
         <span>−10 сек</span>
     </div>
     <div class="skip-flash" id="skip-fwd">
-        <i class="ti ti-rotate-clockwise-2"></i>
+        <i class="ti ti-forward-10"></i>
         <span>+10 сек</span>
     </div>
+
+    <div id="kb-hint"></div>
 
     <div id="error-overlay">
         <i class="ov-icon ti ti-alert-triangle" aria-hidden="true"></i>
@@ -321,44 +323,30 @@
             </div>
         </div>
         <div id="btn-row">
-            <!-- Play -->
             <button class="ctrl-btn" id="btn-play" aria-label="Відтворити">
                 <i class="ti ti-player-play-filled"></i>
             </button>
-
-            <!-- Skip back -->
-            <button class="ctrl-btn" id="btn-back" aria-label="−10 секунд">
+            <button class="ctrl-btn" id="btn-back" aria-label="−10 секунд" title="←  або J">
                 <i class="ti ti-rewind-10"></i>
             </button>
-
-            <!-- Skip forward -->
-            <button class="ctrl-btn" id="btn-fwd" aria-label="+10 секунд">
+            <button class="ctrl-btn" id="btn-fwd" aria-label="+10 секунд" title="→  або L">
                 <i class="ti ti-forward-10"></i>
             </button>
-
-            <!-- Time -->
             <span id="time-display">0:00 / 0:00</span>
-
             <div class="spacer"></div>
-
-            <!-- Volume -->
             <div id="vol-wrap">
-                <button class="ctrl-btn" id="btn-mute" aria-label="Звук">
+                <button class="ctrl-btn" id="btn-mute" aria-label="Звук" title="M">
                     <i class="ti ti-volume"></i>
                 </button>
                 <div id="vol-slider-wrap">
-                    <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.15" aria-label="Гучність">
+                    <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.15">
                 </div>
             </div>
-
-            <!-- Quality -->
             <button id="quality-btn" aria-label="Якість" aria-haspopup="true" aria-expanded="false">
                 <span id="quality-label">—</span>
                 <i class="ti ti-chevron-up q-arrow" aria-hidden="true"></i>
             </button>
-
-            <!-- Fullscreen -->
-            <button class="ctrl-btn" id="btn-fs" aria-label="Повний екран">
+            <button class="ctrl-btn" id="btn-fs" aria-label="Повний екран" title="F">
                 <i class="ti ti-arrows-maximize"></i>
             </button>
         </div>
@@ -367,7 +355,6 @@
 
 <script>
 (function () {
-    /* Telegram */
     const tg = window.Telegram?.WebApp;
     if (tg) {
         tg.expand();
@@ -375,9 +362,7 @@
         tg.setBackgroundColor('#000000');
     }
 
-    /* Touch detection */
     const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-    if (isTouch) document.body.classList.add('is-touch');
 
     /* DOM */
     const player        = document.getElementById('player');
@@ -402,19 +387,20 @@
     const qualityBtn    = document.getElementById('quality-btn');
     const qualityLabel  = document.getElementById('quality-label');
     const qualityMenu   = document.getElementById('quality-menu');
-    const skipBack      = document.getElementById('skip-back');
-    const skipFwd       = document.getElementById('skip-fwd');
+    const skipBackEl    = document.getElementById('skip-back');
+    const skipFwdEl     = document.getElementById('skip-fwd');
+    const kbHint        = document.getElementById('kb-hint');
 
-    /* State */
     let hls          = null;
     let qualities    = {};
     let currentLabel = null;
     let uiTimer      = null;
     let menuOpen     = false;
     let scrubbing    = false;
-    let skipTimer    = { back: null, fwd: null };
+    let kbHintTimer  = null;
+    let skipTimers   = {};
 
-    /* Parse URL */
+    /* ── Parse URL ── */
     const dataParam = new URLSearchParams(window.location.search).get('data');
     if (!dataParam) {
         noData.classList.add('visible');
@@ -429,7 +415,7 @@
         return;
     }
 
-    /* Build quality menu */
+    /* ── Quality menu items ── */
     for (const label of Object.keys(qualities)) {
         const item = document.createElement('button');
         item.className = 'qm-item';
@@ -445,7 +431,7 @@
         qualityMenu.appendChild(item);
     }
 
-    /* Init */
+    /* ── Init ── */
     player.volume = 0.15;
     loadVideo(Object.keys(qualities)[0], false);
     showControls();
@@ -489,24 +475,22 @@
         );
     }
 
-    /* ── Time format: h:mm:ss or m:ss ── */
+    /* ── Time format ── */
     function fmt(s) {
         s = Math.floor(s || 0);
         const h   = Math.floor(s / 3600);
         const m   = Math.floor((s % 3600) / 60);
         const sec = String(s % 60).padStart(2, '0');
-        return h > 0
-            ? `${h}:${String(m).padStart(2, '0')}:${sec}`
-            : `${m}:${sec}`;
+        return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${sec}` : `${m}:${sec}`;
     }
 
-    /* ── Progress ── */
+    /* ── Progress update ── */
     player.addEventListener('timeupdate', () => {
         if (scrubbing) return;
         const pct = player.duration ? (player.currentTime / player.duration) * 100 : 0;
-        progressFill.style.width  = pct + '%';
-        progressThumb.style.left  = pct + '%';
-        timeDisplay.textContent   = fmt(player.currentTime) + ' / ' + fmt(player.duration);
+        progressFill.style.width = pct + '%';
+        progressThumb.style.left = pct + '%';
+        timeDisplay.textContent  = fmt(player.currentTime) + ' / ' + fmt(player.duration);
     });
     player.addEventListener('progress', () => {
         if (!player.duration || !player.buffered.length) return;
@@ -529,12 +513,14 @@
     progressWrap.addEventListener('touchstart', (e) => {
         e.stopPropagation(); scrubbing = true; scrubAt(e.touches[0].clientX);
     }, { passive: true });
-    progressWrap.addEventListener('mousemove', (e) => { if (scrubbing) scrubAt(e.clientX); });
-    progressWrap.addEventListener('touchmove', (e) => { if (scrubbing) scrubAt(e.touches[0].clientX); }, { passive: true });
+    document.addEventListener('mousemove', (e) => { if (scrubbing) scrubAt(e.clientX); });
+    progressWrap.addEventListener('touchmove', (e) => {
+        if (scrubbing) { e.preventDefault(); scrubAt(e.touches[0].clientX); }
+    }, { passive: false });
     document.addEventListener('mouseup',  () => { scrubbing = false; });
     document.addEventListener('touchend', () => { scrubbing = false; });
 
-    /* ── Play / pause ── */
+    /* ── Play / Pause ── */
     function togglePlay() {
         if (player.paused) player.play().catch(() => {});
         else player.pause();
@@ -543,33 +529,26 @@
     player.addEventListener('play',  () => { btnPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>'; });
     player.addEventListener('pause', () => { btnPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; });
 
-    /* ── Skip ±10s ── */
-    function flashSkip(el, timer) {
+    /* ── Skip ── */
+    function flashSkip(el, key) {
         el.classList.add('show');
-        clearTimeout(skipTimer[timer]);
-        skipTimer[timer] = setTimeout(() => el.classList.remove('show'), 700);
+        clearTimeout(skipTimers[key]);
+        skipTimers[key] = setTimeout(() => el.classList.remove('show'), 700);
     }
-    btnBack.addEventListener('click', (e) => {
-        e.stopPropagation();
-        player.currentTime = Math.max(0, player.currentTime - 10);
-        flashSkip(skipBack, 'back');
+    function skipBy(sec) {
+        player.currentTime = Math.max(0, Math.min(player.duration || 0, player.currentTime + sec));
+        flashSkip(sec < 0 ? skipBackEl : skipFwdEl, sec < 0 ? 'b' : 'f');
         showControls();
-    });
-    btnFwd.addEventListener('click', (e) => {
-        e.stopPropagation();
-        player.currentTime = Math.min(player.duration || 0, player.currentTime + 10);
-        flashSkip(skipFwd, 'fwd');
-        showControls();
-    });
+    }
+    btnBack.addEventListener('click', (e) => { e.stopPropagation(); skipBy(-10); });
+    btnFwd .addEventListener('click', (e) => { e.stopPropagation(); skipBy(+10); });
 
     /* ── Volume ── */
     function updateVolIcon() {
-        const v = player.volume;
-        const m = player.muted;
-        let icon = 'ti-volume';
-        if (m || v === 0) icon = 'ti-volume-off';
-        else if (v < 0.5)  icon = 'ti-volume-2';
+        const v = player.muted || player.volume === 0;
+        const icon = v ? 'ti-volume-off' : player.volume < 0.5 ? 'ti-volume-2' : 'ti-volume';
         btnMute.innerHTML = `<i class="ti ${icon}"></i>`;
+        volSlider.value = player.muted ? 0 : player.volume;
     }
     btnMute.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -584,7 +563,9 @@
         updateVolIcon();
         showControls();
     });
-    volSlider.addEventListener('click', (e) => e.stopPropagation());
+    volSlider.addEventListener('click',      (e) => e.stopPropagation());
+    volSlider.addEventListener('mousedown',  (e) => e.stopPropagation());
+    volSlider.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
     player.addEventListener('volumechange', updateVolIcon);
     updateVolIcon();
 
@@ -595,7 +576,7 @@
     player.addEventListener('canplay',   () => setLoading(false));
     player.addEventListener('loadstart', () => setLoading(true));
     player.addEventListener('error', () => {
-        const m = { 1:'Завантаження перервано.', 2:'Помилка мережі.', 3:'Помилка декодування.', 4:'Формат не підтримується.' };
+        const m = {1:'Завантаження перервано.',2:'Помилка мережі.',3:'Помилка декодування.',4:'Формат не підтримується.'};
         showError(m[player.error?.code] || 'Невідома помилка.');
     });
 
@@ -605,7 +586,7 @@
     retryBtn.addEventListener('click', () => { if (currentLabel) loadVideo(currentLabel, false); });
 
     /* ── Quality menu ── */
-    function openMenu()  {
+    function openMenu() {
         menuOpen = true;
         qualityMenu.classList.add('open');
         qualityBtn.classList.add('open');
@@ -631,55 +612,118 @@
             uiTimer = setTimeout(() => { if (!menuOpen) controls.classList.remove('visible'); }, 3500);
         }
     }
+    function hideControls() {
+        if (menuOpen) return;
+        controls.classList.remove('visible');
+    }
 
-    /* Tap zones for double-tap skip on mobile */
-    let tapTimer = null;
-    let tapCount = 0;
-    let tapSide  = null;
+    /* Mouse movement shows controls on desktop */
+    wrapper.addEventListener('mousemove', () => { if (!isTouch) showControls(); });
+    wrapper.addEventListener('mouseleave', () => { if (!isTouch && !menuOpen) hideControls(); });
 
+    /* Click on video area (not controls) */
+    wrapper.addEventListener('click', (e) => {
+        if (controls.contains(e.target) || qualityMenu.contains(e.target)) return;
+        if (menuOpen) { closeMenu(); return; }
+        if (!isTouch) {
+            togglePlay();
+            showControls();
+        }
+    });
+
+    /* Touch: single tap = show/hide, double tap = skip */
+    let tapTimer = null, tapCount = 0, tapSide = null;
     wrapper.addEventListener('touchend', (e) => {
         if (controls.contains(e.target) || qualityMenu.contains(e.target)) return;
         if (menuOpen) { closeMenu(); return; }
-
         const x    = e.changedTouches[0].clientX;
-        const side = x < wrapper.clientWidth / 2 ? 'left' : 'right';
-
-        if (tapSide !== side) { tapCount = 0; }
+        const side = x < wrapper.clientWidth / 2 ? 'L' : 'R';
+        if (tapSide !== side) tapCount = 0;
         tapSide = side;
         tapCount++;
-
         clearTimeout(tapTimer);
         tapTimer = setTimeout(() => {
             if (tapCount === 1) {
-                controls.classList.contains('visible') ? controls.classList.remove('visible') : showControls();
+                controls.classList.contains('visible') ? hideControls() : showControls();
             } else {
-                /* double tap = skip */
-                if (side === 'left') {
-                    player.currentTime = Math.max(0, player.currentTime - 10);
-                    flashSkip(skipBack, 'back');
-                } else {
-                    player.currentTime = Math.min(player.duration || 0, player.currentTime + 10);
-                    flashSkip(skipFwd, 'fwd');
-                }
-                showControls();
+                skipBy(side === 'L' ? -10 : 10);
             }
             tapCount = 0;
         }, 250);
     });
 
-    wrapper.addEventListener('click', (e) => {
-        if (isTouch) return; /* handled by touchend */
-        if (controls.contains(e.target) || qualityMenu.contains(e.target)) return;
-        if (menuOpen) { closeMenu(); return; }
-        if (controls.classList.contains('visible')) togglePlay();
-        else showControls();
-    });
-
     player.addEventListener('play',  showControls);
     player.addEventListener('pause', showControls);
 
+    /* ── Keyboard shortcuts ── */
+    function showKbHint(text) {
+        kbHint.textContent = text;
+        kbHint.classList.add('show');
+        clearTimeout(kbHintTimer);
+        kbHintTimer = setTimeout(() => kbHint.classList.remove('show'), 1200);
+        showControls();
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT') return;
+        switch (e.key) {
+            case ' ':
+            case 'k':
+            case 'K':
+                e.preventDefault();
+                togglePlay();
+                showControls();
+                break;
+            case 'ArrowLeft':
+            case 'j':
+            case 'J':
+                e.preventDefault();
+                skipBy(-10);
+                showKbHint('← −10 сек');
+                break;
+            case 'ArrowRight':
+            case 'l':
+            case 'L':
+                e.preventDefault();
+                skipBy(+10);
+                showKbHint('→ +10 сек');
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                player.volume = Math.min(1, +(player.volume + 0.1).toFixed(2));
+                player.muted  = false;
+                updateVolIcon();
+                showKbHint('↑ ' + Math.round(player.volume * 100) + '%');
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                player.volume = Math.max(0, +(player.volume - 0.1).toFixed(2));
+                player.muted  = player.volume === 0;
+                updateVolIcon();
+                showKbHint('↓ ' + Math.round(player.volume * 100) + '%');
+                break;
+            case 'm':
+            case 'M':
+                e.preventDefault();
+                player.muted = !player.muted;
+                updateVolIcon();
+                showKbHint(player.muted ? 'M Mute' : 'M Unmute');
+                break;
+            case 'f':
+            case 'F':
+                e.preventDefault();
+                isFs() ? exitFs() : requestFs();
+                break;
+        }
+    });
+
     /* ── Fullscreen ── */
     function requestFs() {
+        /* На iOS — fullscreen через сам video елемент */
+        if (player.webkitEnterFullscreen) {
+            player.webkitEnterFullscreen();
+            return;
+        }
         const el = wrapper;
         const fn = el.requestFullscreen
                 || el.webkitRequestFullscreen
@@ -688,6 +732,10 @@
         if (fn) fn.call(el).catch(() => {});
     }
     function exitFs() {
+        if (document.webkitExitFullscreen && player.webkitDisplayingFullscreen) {
+            document.webkitExitFullscreen();
+            return;
+        }
         const fn = document.exitFullscreen
                || document.webkitExitFullscreen
                || document.mozCancelFullScreen
@@ -698,7 +746,8 @@
         return !!(document.fullscreenElement
                || document.webkitFullscreenElement
                || document.mozFullScreenElement
-               || document.msFullscreenElement);
+               || document.msFullscreenElement
+               || player.webkitDisplayingFullscreen);
     }
 
     btnFs.addEventListener('click', (e) => {
@@ -714,10 +763,12 @@
             : '<i class="ti ti-arrows-maximize"></i>';
         try { inFs ? tg?.requestFullscreen?.() : tg?.exitFullscreen?.(); } catch {}
     }
-    document.addEventListener('fullscreenchange',       onFsChange);
-    document.addEventListener('webkitfullscreenchange', onFsChange);
-    document.addEventListener('mozfullscreenchange',    onFsChange);
-    document.addEventListener('MSFullscreenChange',     onFsChange);
+    document.addEventListener('fullscreenchange',          onFsChange);
+    document.addEventListener('webkitfullscreenchange',    onFsChange);
+    document.addEventListener('mozfullscreenchange',       onFsChange);
+    document.addEventListener('MSFullscreenChange',        onFsChange);
+    player  .addEventListener('webkitbeginfullscreen',     onFsChange);
+    player  .addEventListener('webkitendfullscreen',       onFsChange);
 })();
 </script>
 </body>
