@@ -215,7 +215,7 @@
     /* ── Initial load ── */
     const firstLabel = Object.keys(qualities)[0];
     player.volume = 0.15;
-    loadVideo(firstLabel, false);
+    requestAnimationFrame(() => loadVideo(firstLabel, false));
 
     /* ── Core: load video at quality label ── */
     function loadVideo(label, preserveTime = true) {
@@ -333,6 +333,9 @@
 
     document.addEventListener('touchstart', showQuality, { passive: true });
     document.addEventListener('click',      showQuality);
+
+    /* ── Show panel on startup so user knows it exists ── */
+    showQuality();
 
     /* ── Fullscreen ↔ Telegram fullscreen sync ── */
     function onFullscreenChange() {
