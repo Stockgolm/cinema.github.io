@@ -17,48 +17,44 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: #fff;
             -webkit-tap-highlight-color: transparent;
+            user-select: none;
         }
 
         #wrapper {
             position: relative;
             width: 100%;
             height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         video {
             width: 100%;
             height: 100%;
+            display: block;
             outline: none;
             background: #000;
         }
 
-        /* ── Loader ── */
+        /* Loader */
         #loader {
             position: absolute;
             inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(0,0,0,0.5);
             pointer-events: none;
             transition: opacity 0.25s;
         }
         #loader.hidden { opacity: 0; }
-
         .spinner {
-            width: 44px;
-            height: 44px;
-            border: 3px solid rgba(255,255,255,0.2);
+            width: 48px; height: 48px;
+            border: 3px solid rgba(255,255,255,0.15);
             border-top-color: #fff;
             border-radius: 50%;
             animation: spin 0.75s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ── Error overlay ── */
+        /* Error overlay */
         #error-overlay {
             position: absolute;
             inset: 0;
@@ -67,17 +63,16 @@
             align-items: center;
             justify-content: center;
             gap: 12px;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.88);
             text-align: center;
-            padding: 24px;
+            padding: 32px;
         }
         #error-overlay.visible { display: flex; }
-        #error-icon { font-size: 42px; color: rgba(255,255,255,0.5); line-height: 1; }
-        #no-data-icon { font-size: 42px; color: rgba(255,255,255,0.35); line-height: 1; }
-        #error-msg { font-size: 15px; color: rgba(255,255,255,0.8); max-width: 260px; line-height: 1.5; }
+        .ov-icon { font-size: 44px; color: rgba(255,255,255,0.4); }
+        #error-msg { font-size: 15px; color: rgba(255,255,255,0.75); max-width: 260px; line-height: 1.55; }
         #retry-btn {
             margin-top: 4px;
-            padding: 9px 22px;
+            padding: 9px 24px;
             border-radius: 8px;
             border: none;
             background: #e50914;
@@ -85,80 +80,233 @@
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-        }
-
-        /* ── Quality panel ── */
-        #quality-selector {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-            gap: 6px;
-            max-width: calc(100% - 32px);
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 10;
-        }
-        #quality-selector.visible { opacity: 1; }
-
-        .q-btn {
-            background: rgba(0,0,0,0.65);
-            color: #fff;
-            border: 1px solid rgba(255,255,255,0.25);
-            padding: 6px 13px;
-            border-radius: 7px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            transition: background 0.15s, border-color 0.15s;
             touch-action: manipulation;
-            user-select: none;
         }
-        .q-btn:hover { background: rgba(255,255,255,0.18); }
-        .q-btn.active { background: #e50914; border-color: #e50914; }
 
-        /* ── No-data message ── */
+        /* No-data */
         #no-data {
             position: absolute;
             inset: 0;
             display: none;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
-            gap: 10px;
-            color: rgba(255,255,255,0.7);
-            font-size: 15px;
+            gap: 12px;
         }
         #no-data.visible { display: flex; }
+        #no-data span { font-size: 15px; color: rgba(255,255,255,0.5); }
+
+        /* Controls bar */
+        #controls {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 0 4px 6px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.78) 55%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 20;
+        }
+        #controls.visible { opacity: 1; }
+
+        /* Progress */
+        #progress-wrap {
+            padding: 12px 8px 6px;
+            cursor: pointer;
+            touch-action: none;
+        }
+        #progress-track {
+            height: 3px;
+            background: rgba(255,255,255,0.22);
+            border-radius: 2px;
+            position: relative;
+            transition: height 0.15s;
+        }
+        #progress-wrap:hover #progress-track { height: 5px; }
+        #progress-buf {
+            position: absolute;
+            left: 0; top: 0; height: 100%;
+            background: rgba(255,255,255,0.28);
+            border-radius: 2px;
+            width: 0%;
+        }
+        #progress-fill {
+            position: absolute;
+            left: 0; top: 0; height: 100%;
+            background: #e50914;
+            border-radius: 2px;
+            width: 0%;
+        }
+        #progress-thumb {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            width: 13px; height: 13px;
+            background: #fff;
+            border-radius: 50%;
+            left: 0%;
+            transition: transform 0.15s;
+            pointer-events: none;
+        }
+        #progress-wrap:hover #progress-thumb { transform: translate(-50%, -50%) scale(1); }
+
+        /* Button row */
+        #btn-row {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            padding: 0 4px 2px;
+        }
+
+        .ctrl-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            line-height: 1;
+            touch-action: manipulation;
+            transition: background 0.12s;
+            flex-shrink: 0;
+        }
+        .ctrl-btn:hover  { background: rgba(255,255,255,0.1); }
+        .ctrl-btn:active { background: rgba(255,255,255,0.18); }
+
+        #time-display {
+            font-size: 12px;
+            color: rgba(255,255,255,0.8);
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+            padding: 0 4px;
+        }
+        .spacer { flex: 1; }
+
+        /* Quality button */
+        #quality-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.18);
+            color: #fff;
+            cursor: pointer;
+            padding: 5px 11px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            touch-action: manipulation;
+            transition: background 0.12s, border-color 0.12s;
+            white-space: nowrap;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        #quality-btn:hover { background: rgba(255,255,255,0.18); }
+        #quality-btn.open  { background: #e50914; border-color: #e50914; }
+        #quality-btn .q-arrow { font-size: 14px; transition: transform 0.2s; }
+        #quality-btn.open .q-arrow { transform: rotate(180deg); }
+
+        /* Quality popup */
+        #quality-menu {
+            position: absolute;
+            bottom: 58px;
+            right: 8px;
+            background: rgba(15,15,15,0.96);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            min-width: 120px;
+            display: none;
+            flex-direction: column;
+            z-index: 30;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        #quality-menu.open { display: flex; }
+
+        #quality-menu-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.35);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 10px 16px 6px;
+        }
+
+        .qm-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            touch-action: manipulation;
+            border: none;
+            background: none;
+            color: rgba(255,255,255,0.65);
+            text-align: left;
+            width: 100%;
+            transition: background 0.1s, color 0.1s;
+        }
+        .qm-item:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .qm-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+        .qm-item.active { color: #fff; }
+        .qm-check { font-size: 15px; color: #e50914; visibility: hidden; flex-shrink: 0; }
+        .qm-item.active .qm-check { visibility: visible; }
     </style>
 </head>
 <body>
 <div id="wrapper">
-    <video id="player" controls playsinline preload="metadata"></video>
+    <video id="player" playsinline preload="metadata"></video>
 
     <div id="loader"><div class="spinner"></div></div>
 
     <div id="error-overlay">
-        <i id="error-icon" class="ti ti-alert-triangle" aria-hidden="true"></i>
+        <i class="ov-icon ti ti-alert-triangle" aria-hidden="true"></i>
         <p id="error-msg">Не вдалося завантажити відео</p>
         <button id="retry-btn">Спробувати знову</button>
     </div>
 
     <div id="no-data">
-        <i id="no-data-icon" class="ti ti-video-off" aria-hidden="true"></i>
+        <i class="ov-icon ti ti-video-off" aria-hidden="true"></i>
         <span>Відео не знайдено</span>
     </div>
 
-    <div id="quality-selector"></div>
+    <div id="quality-menu" role="menu" aria-label="Якість">
+        <div id="quality-menu-title">Якість</div>
+    </div>
+
+    <div id="controls">
+        <div id="progress-wrap" role="slider" aria-label="Прогрес">
+            <div id="progress-track">
+                <div id="progress-buf"></div>
+                <div id="progress-fill"></div>
+                <div id="progress-thumb"></div>
+            </div>
+        </div>
+        <div id="btn-row">
+            <button class="ctrl-btn" id="btn-play" aria-label="Відтворити">
+                <i class="ti ti-player-play-filled"></i>
+            </button>
+            <span id="time-display">0:00 / 0:00</span>
+            <div class="spacer"></div>
+            <button id="quality-btn" aria-label="Якість" aria-haspopup="true" aria-expanded="false">
+                <span id="quality-label">—</span>
+                <i class="ti ti-chevron-up q-arrow" aria-hidden="true"></i>
+            </button>
+            <button class="ctrl-btn" id="btn-fs" aria-label="Повний екран">
+                <i class="ti ti-arrows-maximize"></i>
+            </button>
+        </div>
+    </div>
 </div>
 
 <script>
 (function () {
-    /* ── Telegram init ── */
     const tg = window.Telegram?.WebApp;
     if (tg) {
         tg.expand();
@@ -166,26 +314,34 @@
         tg.setBackgroundColor('#000000');
     }
 
-    /* ── DOM refs ── */
-    const player      = document.getElementById('player');
-    const loader      = document.getElementById('loader');
-    const errorOv     = document.getElementById('error-overlay');
-    const errorMsg    = document.getElementById('error-msg');
-    const retryBtn    = document.getElementById('retry-btn');
-    const noData      = document.getElementById('no-data');
-    const qSelector   = document.getElementById('quality-selector');
+    const player       = document.getElementById('player');
+    const wrapper      = document.getElementById('wrapper');
+    const loader       = document.getElementById('loader');
+    const errorOv      = document.getElementById('error-overlay');
+    const errorMsg     = document.getElementById('error-msg');
+    const retryBtn     = document.getElementById('retry-btn');
+    const noData       = document.getElementById('no-data');
+    const controls     = document.getElementById('controls');
+    const progressWrap = document.getElementById('progress-wrap');
+    const progressFill = document.getElementById('progress-fill');
+    const progressBuf  = document.getElementById('progress-buf');
+    const progressThumb= document.getElementById('progress-thumb');
+    const btnPlay      = document.getElementById('btn-play');
+    const btnFs        = document.getElementById('btn-fs');
+    const timeDisplay  = document.getElementById('time-display');
+    const qualityBtn   = document.getElementById('quality-btn');
+    const qualityLabel = document.getElementById('quality-label');
+    const qualityMenu  = document.getElementById('quality-menu');
 
-    /* ── State ── */
-    let hls             = null;
-    let qualities       = {};
-    let currentLabel    = null;
-    let uiTimer         = null;
-    let isLoading       = false;
+    let hls          = null;
+    let qualities    = {};
+    let currentLabel = null;
+    let uiTimer      = null;
+    let menuOpen     = false;
+    let scrubbing    = false;
 
-    /* ── Parse URL data ── */
-    const urlParams = new URLSearchParams(window.location.search);
-    const dataParam = urlParams.get('data');
-
+    /* Parse URL data */
+    const dataParam = new URLSearchParams(window.location.search).get('data');
     if (!dataParam) {
         noData.classList.add('visible');
         loader.classList.add('hidden');
@@ -194,160 +350,196 @@
 
     try {
         qualities = JSON.parse(atob(dataParam));
-        if (!qualities || typeof qualities !== 'object' || !Object.keys(qualities).length) {
-            throw new Error('empty');
-        }
-    } catch (e) {
+        if (!qualities || !Object.keys(qualities).length) throw new Error();
+    } catch {
         showError('Невірний формат даних');
         return;
     }
 
-    /* ── Build quality buttons ── */
+    /* Build quality menu */
     for (const label of Object.keys(qualities)) {
-        const btn = document.createElement('button');
-        btn.className  = 'q-btn';
-        btn.id         = 'btn-' + label;
-        btn.textContent = label;
-        btn.addEventListener('click', () => loadVideo(label, true));
-        qSelector.appendChild(btn);
+        const item = document.createElement('button');
+        item.className = 'qm-item';
+        item.dataset.label = label;
+        item.setAttribute('role', 'menuitem');
+        item.innerHTML = `<i class="ti ti-check qm-check" aria-hidden="true"></i><span>${label}</span>`;
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            loadVideo(label, true);
+            closeMenu();
+            showControls();
+        });
+        qualityMenu.appendChild(item);
     }
 
-    /* ── Initial load ── */
-    const firstLabel = Object.keys(qualities)[0];
+    /* Initial */
     player.volume = 0.15;
-    requestAnimationFrame(() => loadVideo(firstLabel, false));
+    loadVideo(Object.keys(qualities)[0], false);
+    showControls();
 
-    /* ── Core: load video at quality label ── */
-    function loadVideo(label, preserveTime = true) {
+    /* Core load */
+    function loadVideo(label, preserveTime) {
         const url = qualities[label];
         if (!url) return;
 
-        const savedTime = preserveTime ? player.currentTime : 0;
+        const savedTime  = preserveTime ? player.currentTime : 0;
         const wasPlaying = preserveTime && !player.paused;
 
         currentLabel = label;
         setLoading(true);
         hideError();
+        updateQualityUI(label);
 
-        if (hls) {
-            hls.destroy();
-            hls = null;
-        }
+        if (hls) { hls.destroy(); hls = null; }
 
-        const isHls = url.includes('.m3u8');
-
-        if (isHls && Hls.isSupported()) {
-            hls = new Hls({
-                maxBufferLength:    30,
-                maxMaxBufferLength: 600,
-                enableWorker:       true,
-            });
-
+        if (url.includes('.m3u8') && Hls.isSupported()) {
+            hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 600, enableWorker: true });
             hls.loadSource(url);
             hls.attachMedia(player);
-
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                restorePlayback(savedTime, wasPlaying);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => restorePlayback(savedTime, wasPlaying));
+            hls.on(Hls.Events.ERROR, (_e, d) => {
+                if (d.fatal) showError(d.type === Hls.ErrorTypes.NETWORK_ERROR
+                    ? "Помилка мережі. Перевірте з'єднання."
+                    : 'Помилка відтворення потоку.');
             });
-
-            hls.on(Hls.Events.ERROR, (_evt, data) => {
-                if (data.fatal) {
-                    const msg = data.type === Hls.ErrorTypes.NETWORK_ERROR
-                        ? 'Помилка мережі. Перевірте з\'єднання.'
-                        : 'Помилка відтворення потоку.';
-                    showError(msg);
-                }
-            });
-
-        } else if (isHls && player.canPlayType('application/vnd.apple.mpegurl')) {
-            /* Safari native HLS */
-            player.src = url;
-            player.addEventListener('loadedmetadata', () => restorePlayback(savedTime, wasPlaying), { once: true });
         } else {
-            /* Direct MP4 / WebM */
             player.src = url;
             player.addEventListener('loadedmetadata', () => restorePlayback(savedTime, wasPlaying), { once: true });
         }
-
-        updateActiveBtn(label);
     }
 
-    function restorePlayback(time, shouldPlay) {
+    function restorePlayback(time, play) {
         if (time > 0) player.currentTime = time;
-        if (shouldPlay) {
-            player.play().catch(() => {});
+        if (play) player.play().catch(() => {});
+    }
+
+    function updateQualityUI(label) {
+        qualityLabel.textContent = label;
+        qualityMenu.querySelectorAll('.qm-item').forEach(el =>
+            el.classList.toggle('active', el.dataset.label === label)
+        );
+    }
+
+    /* Play/pause */
+    function togglePlay() {
+        if (player.paused) player.play().catch(() => {});
+        else player.pause();
+    }
+    btnPlay.addEventListener('click', (e) => { e.stopPropagation(); togglePlay(); });
+    player.addEventListener('play',  () => { btnPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>'; });
+    player.addEventListener('pause', () => { btnPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; });
+
+    /* Time */
+    function fmt(s) {
+        s = Math.floor(s || 0);
+        return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    }
+    player.addEventListener('timeupdate', () => {
+        if (scrubbing) return;
+        const pct = player.duration ? (player.currentTime / player.duration) * 100 : 0;
+        progressFill.style.width = pct + '%';
+        progressThumb.style.left = pct + '%';
+        timeDisplay.textContent  = fmt(player.currentTime) + ' / ' + fmt(player.duration);
+    });
+    player.addEventListener('progress', () => {
+        if (!player.duration || !player.buffered.length) return;
+        progressBuf.style.width = (player.buffered.end(player.buffered.length - 1) / player.duration * 100) + '%';
+    });
+
+    /* Scrub */
+    function scrubAt(e) {
+        const rect = progressWrap.getBoundingClientRect();
+        const cx   = e.touches ? e.touches[0].clientX : e.clientX;
+        const pct  = Math.max(0, Math.min(1, (cx - rect.left) / rect.width));
+        if (player.duration) {
+            player.currentTime   = pct * player.duration;
+            progressFill.style.width = (pct * 100) + '%';
+            progressThumb.style.left = (pct * 100) + '%';
+        }
+    }
+    progressWrap.addEventListener('mousedown',  (e) => { scrubbing = true; scrubAt(e); e.stopPropagation(); });
+    progressWrap.addEventListener('touchstart', (e) => { scrubbing = true; scrubAt(e); e.stopPropagation(); }, { passive: true });
+    progressWrap.addEventListener('mousemove',  (e) => { if (scrubbing) scrubAt(e); });
+    progressWrap.addEventListener('touchmove',  (e) => { if (scrubbing) scrubAt(e); }, { passive: true });
+    document.addEventListener('mouseup',  () => { scrubbing = false; });
+    document.addEventListener('touchend', () => { scrubbing = false; });
+
+    /* Loader */
+    function setLoading(on) { loader.classList.toggle('hidden', !on); }
+    player.addEventListener('waiting',   () => setLoading(true));
+    player.addEventListener('playing',   () => setLoading(false));
+    player.addEventListener('canplay',   () => setLoading(false));
+    player.addEventListener('loadstart', () => setLoading(true));
+    player.addEventListener('error', () => {
+        const m = { 1: 'Завантаження перервано.', 2: 'Помилка мережі.', 3: 'Помилка декодування.', 4: 'Формат не підтримується.' };
+        showError(m[player.error?.code] || 'Невідома помилка.');
+    });
+
+    function showError(msg) { setLoading(false); errorMsg.textContent = msg; errorOv.classList.add('visible'); }
+    function hideError()     { errorOv.classList.remove('visible'); }
+    retryBtn.addEventListener('click', () => { if (currentLabel) loadVideo(currentLabel, false); });
+
+    /* Quality menu */
+    function openMenu()  {
+        menuOpen = true;
+        qualityMenu.classList.add('open');
+        qualityBtn.classList.add('open');
+        qualityBtn.setAttribute('aria-expanded', 'true');
+    }
+    function closeMenu() {
+        menuOpen = false;
+        qualityMenu.classList.remove('open');
+        qualityBtn.classList.remove('open');
+        qualityBtn.setAttribute('aria-expanded', 'false');
+    }
+    qualityBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menuOpen ? closeMenu() : openMenu();
+        showControls();
+    });
+
+    /* Controls show/hide */
+    function showControls() {
+        controls.classList.add('visible');
+        clearTimeout(uiTimer);
+        if (!player.paused && !menuOpen) {
+            uiTimer = setTimeout(() => { if (!menuOpen) controls.classList.remove('visible'); }, 3500);
         }
     }
 
-    /* ── Quality button highlight ── */
-    function updateActiveBtn(label) {
-        document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
-        const btn = document.getElementById('btn-' + label);
-        if (btn) btn.classList.add('active');
-    }
+    wrapper.addEventListener('touchstart', (e) => {
+        if (controls.contains(e.target)) return;
+        if (menuOpen) { closeMenu(); return; }
+        controls.classList.contains('visible') ? controls.classList.remove('visible') : showControls();
+    }, { passive: true });
 
-    /* ── Loader visibility ── */
-    function setLoading(on) {
-        isLoading = on;
-        loader.classList.toggle('hidden', !on);
-    }
-
-    /* ── Error overlay ── */
-    function showError(msg) {
-        setLoading(false);
-        errorMsg.textContent = msg || 'Не вдалося завантажити відео';
-        errorOv.classList.add('visible');
-    }
-
-    function hideError() {
-        errorOv.classList.remove('visible');
-    }
-
-    retryBtn.addEventListener('click', () => {
-        if (currentLabel) loadVideo(currentLabel, false);
+    wrapper.addEventListener('click', (e) => {
+        if (controls.contains(e.target)) return;
+        if (menuOpen) { closeMenu(); return; }
+        if (controls.classList.contains('visible')) togglePlay();
+        else showControls();
     });
 
-    /* ── Player events → loader state ── */
-    player.addEventListener('waiting',  () => setLoading(true));
-    player.addEventListener('playing',  () => setLoading(false));
-    player.addEventListener('canplay',  () => setLoading(false));
-    player.addEventListener('loadstart',() => setLoading(true));
+    player.addEventListener('play',  showControls);
+    player.addEventListener('pause', showControls);
 
-    player.addEventListener('error', () => {
-        const code = player.error?.code;
-        const msgs = {
-            1: 'Завантаження перервано.',
-            2: 'Помилка мережі.',
-            3: 'Помилка декодування.',
-            4: 'Формат не підтримується.',
-        };
-        showError(msgs[code] || 'Невідома помилка.');
+    /* Fullscreen */
+    btnFs.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            (wrapper.requestFullscreen || wrapper.webkitRequestFullscreen).call(wrapper);
+        } else {
+            (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        }
+        showControls();
     });
-
-    /* ── Touch/click → show quality panel briefly ── */
-    function showQuality() {
-        qSelector.classList.add('visible');
-        clearTimeout(uiTimer);
-        uiTimer = setTimeout(() => qSelector.classList.remove('visible'), 3000);
-    }
-
-    document.addEventListener('touchstart', showQuality, { passive: true });
-    document.addEventListener('click',      showQuality);
-
-    /* ── Show panel on startup so user knows it exists ── */
-    showQuality();
-
-    /* ── Fullscreen ↔ Telegram fullscreen sync ── */
-    function onFullscreenChange() {
+    function onFsChange() {
         const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-        try {
-            if (inFs) tg?.requestFullscreen?.();
-            else       tg?.exitFullscreen?.();
-        } catch (_) {}
+        btnFs.innerHTML = inFs ? '<i class="ti ti-arrows-minimize"></i>' : '<i class="ti ti-arrows-maximize"></i>';
+        try { inFs ? tg?.requestFullscreen?.() : tg?.exitFullscreen?.(); } catch {}
     }
-
-    player.addEventListener('fullscreenchange',       onFullscreenChange);
-    player.addEventListener('webkitfullscreenchange', onFullscreenChange);
+    document.addEventListener('fullscreenchange',       onFsChange);
+    document.addEventListener('webkitfullscreenchange', onFsChange);
 })();
 </script>
 </body>
