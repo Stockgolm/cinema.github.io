@@ -34,7 +34,7 @@
             background: #000;
         }
 
-        /* Loader */
+        /* ── Loader ── */
         #loader {
             position: absolute;
             inset: 0;
@@ -43,8 +43,9 @@
             justify-content: center;
             pointer-events: none;
             transition: opacity 0.25s;
+            z-index: 10;
         }
-        #loader.hidden { opacity: 0; }
+        #loader.hidden { opacity: 0; pointer-events: none; }
         .spinner {
             width: 48px; height: 48px;
             border: 3px solid rgba(255,255,255,0.15);
@@ -54,7 +55,27 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Error overlay */
+        /* ── Skip feedback ── */
+        .skip-flash {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s;
+            z-index: 15;
+        }
+        .skip-flash.show { opacity: 1; }
+        .skip-flash i { font-size: 36px; }
+        .skip-flash span { font-size: 12px; font-weight: 600; }
+        #skip-back  { left: 15%; }
+        #skip-fwd   { right: 15%; }
+
+        /* ── Error overlay ── */
         #error-overlay {
             position: absolute;
             inset: 0;
@@ -66,42 +87,35 @@
             background: rgba(0,0,0,0.88);
             text-align: center;
             padding: 32px;
+            z-index: 50;
         }
         #error-overlay.visible { display: flex; }
         .ov-icon { font-size: 44px; color: rgba(255,255,255,0.4); }
         #error-msg { font-size: 15px; color: rgba(255,255,255,0.75); max-width: 260px; line-height: 1.55; }
         #retry-btn {
-            margin-top: 4px;
-            padding: 9px 24px;
-            border-radius: 8px;
-            border: none;
-            background: #e50914;
-            color: #fff;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            touch-action: manipulation;
+            margin-top: 4px; padding: 9px 24px;
+            border-radius: 8px; border: none;
+            background: #e50914; color: #fff;
+            font-size: 14px; font-weight: 600;
+            cursor: pointer; touch-action: manipulation;
         }
 
-        /* No-data */
+        /* ── No-data ── */
         #no-data {
-            position: absolute;
-            inset: 0;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
+            position: absolute; inset: 0;
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center; gap: 12px;
+            z-index: 50;
         }
         #no-data.visible { display: flex; }
         #no-data span { font-size: 15px; color: rgba(255,255,255,0.5); }
 
-        /* Controls bar */
+        /* ── Controls ── */
         #controls {
             position: absolute;
             bottom: 0; left: 0; right: 0;
-            padding: 0 4px 6px;
-            background: linear-gradient(transparent, rgba(0,0,0,0.78) 55%);
+            padding: 0 0 6px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.82) 50%);
             opacity: 0;
             transition: opacity 0.3s;
             z-index: 20;
@@ -110,7 +124,7 @@
 
         /* Progress */
         #progress-wrap {
-            padding: 12px 8px 6px;
+            padding: 12px 10px 8px;
             cursor: pointer;
             touch-action: none;
         }
@@ -121,136 +135,144 @@
             position: relative;
             transition: height 0.15s;
         }
-        #progress-wrap:hover #progress-track { height: 5px; }
+        #progress-wrap:hover #progress-track,
+        body.is-touch #progress-track { height: 5px; }
+
         #progress-buf {
-            position: absolute;
-            left: 0; top: 0; height: 100%;
+            position: absolute; left: 0; top: 0; height: 100%;
             background: rgba(255,255,255,0.28);
-            border-radius: 2px;
-            width: 0%;
+            border-radius: 2px; width: 0%;
         }
         #progress-fill {
-            position: absolute;
-            left: 0; top: 0; height: 100%;
-            background: #e50914;
-            border-radius: 2px;
-            width: 0%;
+            position: absolute; left: 0; top: 0; height: 100%;
+            background: #e50914; border-radius: 2px; width: 0%;
         }
         #progress-thumb {
-            position: absolute;
-            top: 50%;
+            position: absolute; top: 50%;
             transform: translate(-50%, -50%) scale(0);
-            width: 13px; height: 13px;
-            background: #fff;
-            border-radius: 50%;
-            left: 0%;
-            transition: transform 0.15s;
-            pointer-events: none;
+            width: 14px; height: 14px;
+            background: #fff; border-radius: 50%; left: 0%;
+            transition: transform 0.15s; pointer-events: none;
         }
-        #progress-wrap:hover #progress-thumb { transform: translate(-50%, -50%) scale(1); }
+        #progress-wrap:hover #progress-thumb,
+        body.is-touch #progress-thumb { transform: translate(-50%, -50%) scale(1); }
 
         /* Button row */
         #btn-row {
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            padding: 0 4px 2px;
+            display: flex; align-items: center;
+            gap: 0; padding: 0 6px 2px;
         }
 
         .ctrl-btn {
-            background: none;
-            border: none;
-            color: #fff;
-            cursor: pointer;
-            padding: 8px;
+            background: none; border: none; color: #fff;
+            cursor: pointer; padding: 7px 8px;
             border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            line-height: 1;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; line-height: 1;
             touch-action: manipulation;
             transition: background 0.12s;
             flex-shrink: 0;
+            -webkit-tap-highlight-color: transparent;
         }
         .ctrl-btn:hover  { background: rgba(255,255,255,0.1); }
         .ctrl-btn:active { background: rgba(255,255,255,0.18); }
 
         #time-display {
             font-size: 12px;
-            color: rgba(255,255,255,0.8);
+            color: rgba(255,255,255,0.85);
             letter-spacing: 0.02em;
             white-space: nowrap;
-            padding: 0 4px;
+            padding: 0 6px;
         }
+
+        /* Volume section */
+        #vol-wrap {
+            display: flex; align-items: center;
+            gap: 4px; flex-shrink: 0;
+        }
+        #vol-slider-wrap {
+            width: 0;
+            overflow: hidden;
+            transition: width 0.25s;
+            display: flex;
+            align-items: center;
+        }
+        #vol-wrap:hover #vol-slider-wrap,
+        #vol-wrap:focus-within #vol-slider-wrap { width: 72px; }
+        #vol-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 68px; height: 3px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px; outline: none;
+            cursor: pointer;
+            accent-color: #e50914;
+        }
+        #vol-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 13px; height: 13px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+        }
+        #vol-slider::-moz-range-thumb {
+            width: 13px; height: 13px;
+            border-radius: 50%;
+            background: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
         .spacer { flex: 1; }
 
         /* Quality button */
         #quality-btn {
             background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.18);
-            color: #fff;
-            cursor: pointer;
-            padding: 5px 11px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 700;
+            color: #fff; cursor: pointer;
+            padding: 5px 10px; border-radius: 6px;
+            font-size: 12px; font-weight: 700;
             letter-spacing: 0.04em;
             touch-action: manipulation;
             transition: background 0.12s, border-color 0.12s;
-            white-space: nowrap;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            white-space: nowrap; flex-shrink: 0;
+            display: flex; align-items: center; gap: 4px;
+            -webkit-tap-highlight-color: transparent;
         }
         #quality-btn:hover { background: rgba(255,255,255,0.18); }
         #quality-btn.open  { background: #e50914; border-color: #e50914; }
-        #quality-btn .q-arrow { font-size: 14px; transition: transform 0.2s; }
+        #quality-btn .q-arrow { font-size: 13px; transition: transform 0.2s; }
         #quality-btn.open .q-arrow { transform: rotate(180deg); }
 
         /* Quality popup */
         #quality-menu {
             position: absolute;
-            bottom: 58px;
-            right: 8px;
-            background: rgba(15,15,15,0.96);
+            bottom: 58px; right: 8px;
+            background: rgba(15,15,15,0.97);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
-            overflow: hidden;
+            border-radius: 10px; overflow: hidden;
             min-width: 120px;
-            display: none;
-            flex-direction: column;
+            display: none; flex-direction: column;
             z-index: 30;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
         #quality-menu.open { display: flex; }
-
         #quality-menu-title {
-            font-size: 11px;
-            font-weight: 600;
+            font-size: 11px; font-weight: 600;
             color: rgba(255,255,255,0.35);
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
+            letter-spacing: 0.08em; text-transform: uppercase;
             padding: 10px 16px 6px;
         }
-
         .qm-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            touch-action: manipulation;
-            border: none;
-            background: none;
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; font-size: 14px; font-weight: 500;
+            cursor: pointer; touch-action: manipulation;
+            border: none; background: none;
             color: rgba(255,255,255,0.65);
-            text-align: left;
-            width: 100%;
+            text-align: left; width: 100%;
             transition: background 0.1s, color 0.1s;
+            -webkit-tap-highlight-color: transparent;
         }
         .qm-item:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.06); }
         .qm-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
@@ -261,9 +283,19 @@
 </head>
 <body>
 <div id="wrapper">
-    <video id="player" playsinline preload="metadata"></video>
+    <video id="player" playsinline webkit-playsinline preload="metadata"></video>
 
     <div id="loader"><div class="spinner"></div></div>
+
+    <!-- Skip indicators -->
+    <div class="skip-flash" id="skip-back">
+        <i class="ti ti-rotate-clockwise-2" style="transform:scaleX(-1)"></i>
+        <span>−10 сек</span>
+    </div>
+    <div class="skip-flash" id="skip-fwd">
+        <i class="ti ti-rotate-clockwise-2"></i>
+        <span>+10 сек</span>
+    </div>
 
     <div id="error-overlay">
         <i class="ov-icon ti ti-alert-triangle" aria-hidden="true"></i>
@@ -289,15 +321,43 @@
             </div>
         </div>
         <div id="btn-row">
+            <!-- Play -->
             <button class="ctrl-btn" id="btn-play" aria-label="Відтворити">
                 <i class="ti ti-player-play-filled"></i>
             </button>
+
+            <!-- Skip back -->
+            <button class="ctrl-btn" id="btn-back" aria-label="−10 секунд">
+                <i class="ti ti-rewind-10"></i>
+            </button>
+
+            <!-- Skip forward -->
+            <button class="ctrl-btn" id="btn-fwd" aria-label="+10 секунд">
+                <i class="ti ti-forward-10"></i>
+            </button>
+
+            <!-- Time -->
             <span id="time-display">0:00 / 0:00</span>
+
             <div class="spacer"></div>
+
+            <!-- Volume -->
+            <div id="vol-wrap">
+                <button class="ctrl-btn" id="btn-mute" aria-label="Звук">
+                    <i class="ti ti-volume"></i>
+                </button>
+                <div id="vol-slider-wrap">
+                    <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.15" aria-label="Гучність">
+                </div>
+            </div>
+
+            <!-- Quality -->
             <button id="quality-btn" aria-label="Якість" aria-haspopup="true" aria-expanded="false">
                 <span id="quality-label">—</span>
                 <i class="ti ti-chevron-up q-arrow" aria-hidden="true"></i>
             </button>
+
+            <!-- Fullscreen -->
             <button class="ctrl-btn" id="btn-fs" aria-label="Повний екран">
                 <i class="ti ti-arrows-maximize"></i>
             </button>
@@ -307,6 +367,7 @@
 
 <script>
 (function () {
+    /* Telegram */
     const tg = window.Telegram?.WebApp;
     if (tg) {
         tg.expand();
@@ -314,43 +375,55 @@
         tg.setBackgroundColor('#000000');
     }
 
-    const player       = document.getElementById('player');
-    const wrapper      = document.getElementById('wrapper');
-    const loader       = document.getElementById('loader');
-    const errorOv      = document.getElementById('error-overlay');
-    const errorMsg     = document.getElementById('error-msg');
-    const retryBtn     = document.getElementById('retry-btn');
-    const noData       = document.getElementById('no-data');
-    const controls     = document.getElementById('controls');
-    const progressWrap = document.getElementById('progress-wrap');
-    const progressFill = document.getElementById('progress-fill');
-    const progressBuf  = document.getElementById('progress-buf');
-    const progressThumb= document.getElementById('progress-thumb');
-    const btnPlay      = document.getElementById('btn-play');
-    const btnFs        = document.getElementById('btn-fs');
-    const timeDisplay  = document.getElementById('time-display');
-    const qualityBtn   = document.getElementById('quality-btn');
-    const qualityLabel = document.getElementById('quality-label');
-    const qualityMenu  = document.getElementById('quality-menu');
+    /* Touch detection */
+    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (isTouch) document.body.classList.add('is-touch');
 
+    /* DOM */
+    const player        = document.getElementById('player');
+    const wrapper       = document.getElementById('wrapper');
+    const loader        = document.getElementById('loader');
+    const errorOv       = document.getElementById('error-overlay');
+    const errorMsg      = document.getElementById('error-msg');
+    const retryBtn      = document.getElementById('retry-btn');
+    const noData        = document.getElementById('no-data');
+    const controls      = document.getElementById('controls');
+    const progressWrap  = document.getElementById('progress-wrap');
+    const progressFill  = document.getElementById('progress-fill');
+    const progressBuf   = document.getElementById('progress-buf');
+    const progressThumb = document.getElementById('progress-thumb');
+    const btnPlay       = document.getElementById('btn-play');
+    const btnBack       = document.getElementById('btn-back');
+    const btnFwd        = document.getElementById('btn-fwd');
+    const btnMute       = document.getElementById('btn-mute');
+    const btnFs         = document.getElementById('btn-fs');
+    const volSlider     = document.getElementById('vol-slider');
+    const timeDisplay   = document.getElementById('time-display');
+    const qualityBtn    = document.getElementById('quality-btn');
+    const qualityLabel  = document.getElementById('quality-label');
+    const qualityMenu   = document.getElementById('quality-menu');
+    const skipBack      = document.getElementById('skip-back');
+    const skipFwd       = document.getElementById('skip-fwd');
+
+    /* State */
     let hls          = null;
     let qualities    = {};
     let currentLabel = null;
     let uiTimer      = null;
     let menuOpen     = false;
     let scrubbing    = false;
+    let skipTimer    = { back: null, fwd: null };
 
-    /* Parse URL data */
+    /* Parse URL */
     const dataParam = new URLSearchParams(window.location.search).get('data');
     if (!dataParam) {
         noData.classList.add('visible');
         loader.classList.add('hidden');
         return;
     }
-
     try {
         qualities = JSON.parse(atob(dataParam));
-        if (!qualities || !Object.keys(qualities).length) throw new Error();
+        if (!qualities || !Object.keys(qualities).length) throw 0;
     } catch {
         showError('Невірний формат даних');
         return;
@@ -372,26 +445,22 @@
         qualityMenu.appendChild(item);
     }
 
-    /* Initial */
+    /* Init */
     player.volume = 0.15;
     loadVideo(Object.keys(qualities)[0], false);
     showControls();
 
-    /* Core load */
+    /* ── Load video ── */
     function loadVideo(label, preserveTime) {
         const url = qualities[label];
         if (!url) return;
-
         const savedTime  = preserveTime ? player.currentTime : 0;
         const wasPlaying = preserveTime && !player.paused;
-
         currentLabel = label;
         setLoading(true);
         hideError();
         updateQualityUI(label);
-
         if (hls) { hls.destroy(); hls = null; }
-
         if (url.includes('.m3u8') && Hls.isSupported()) {
             hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 600, enableWorker: true });
             hls.loadSource(url);
@@ -420,7 +489,52 @@
         );
     }
 
-    /* Play/pause */
+    /* ── Time format: h:mm:ss or m:ss ── */
+    function fmt(s) {
+        s = Math.floor(s || 0);
+        const h   = Math.floor(s / 3600);
+        const m   = Math.floor((s % 3600) / 60);
+        const sec = String(s % 60).padStart(2, '0');
+        return h > 0
+            ? `${h}:${String(m).padStart(2, '0')}:${sec}`
+            : `${m}:${sec}`;
+    }
+
+    /* ── Progress ── */
+    player.addEventListener('timeupdate', () => {
+        if (scrubbing) return;
+        const pct = player.duration ? (player.currentTime / player.duration) * 100 : 0;
+        progressFill.style.width  = pct + '%';
+        progressThumb.style.left  = pct + '%';
+        timeDisplay.textContent   = fmt(player.currentTime) + ' / ' + fmt(player.duration);
+    });
+    player.addEventListener('progress', () => {
+        if (!player.duration || !player.buffered.length) return;
+        progressBuf.style.width = (player.buffered.end(player.buffered.length - 1) / player.duration * 100) + '%';
+    });
+
+    /* ── Scrub ── */
+    function scrubAt(clientX) {
+        const rect = progressWrap.getBoundingClientRect();
+        const pct  = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        if (player.duration) {
+            player.currentTime = pct * player.duration;
+            progressFill.style.width = (pct * 100) + '%';
+            progressThumb.style.left = (pct * 100) + '%';
+        }
+    }
+    progressWrap.addEventListener('mousedown', (e) => {
+        e.stopPropagation(); scrubbing = true; scrubAt(e.clientX);
+    });
+    progressWrap.addEventListener('touchstart', (e) => {
+        e.stopPropagation(); scrubbing = true; scrubAt(e.touches[0].clientX);
+    }, { passive: true });
+    progressWrap.addEventListener('mousemove', (e) => { if (scrubbing) scrubAt(e.clientX); });
+    progressWrap.addEventListener('touchmove', (e) => { if (scrubbing) scrubAt(e.touches[0].clientX); }, { passive: true });
+    document.addEventListener('mouseup',  () => { scrubbing = false; });
+    document.addEventListener('touchend', () => { scrubbing = false; });
+
+    /* ── Play / pause ── */
     function togglePlay() {
         if (player.paused) player.play().catch(() => {});
         else player.pause();
@@ -429,57 +543,68 @@
     player.addEventListener('play',  () => { btnPlay.innerHTML = '<i class="ti ti-player-pause-filled"></i>'; });
     player.addEventListener('pause', () => { btnPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; });
 
-    /* Time */
-    function fmt(s) {
-        s = Math.floor(s || 0);
-        return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    /* ── Skip ±10s ── */
+    function flashSkip(el, timer) {
+        el.classList.add('show');
+        clearTimeout(skipTimer[timer]);
+        skipTimer[timer] = setTimeout(() => el.classList.remove('show'), 700);
     }
-    player.addEventListener('timeupdate', () => {
-        if (scrubbing) return;
-        const pct = player.duration ? (player.currentTime / player.duration) * 100 : 0;
-        progressFill.style.width = pct + '%';
-        progressThumb.style.left = pct + '%';
-        timeDisplay.textContent  = fmt(player.currentTime) + ' / ' + fmt(player.duration);
+    btnBack.addEventListener('click', (e) => {
+        e.stopPropagation();
+        player.currentTime = Math.max(0, player.currentTime - 10);
+        flashSkip(skipBack, 'back');
+        showControls();
     });
-    player.addEventListener('progress', () => {
-        if (!player.duration || !player.buffered.length) return;
-        progressBuf.style.width = (player.buffered.end(player.buffered.length - 1) / player.duration * 100) + '%';
+    btnFwd.addEventListener('click', (e) => {
+        e.stopPropagation();
+        player.currentTime = Math.min(player.duration || 0, player.currentTime + 10);
+        flashSkip(skipFwd, 'fwd');
+        showControls();
     });
 
-    /* Scrub */
-    function scrubAt(e) {
-        const rect = progressWrap.getBoundingClientRect();
-        const cx   = e.touches ? e.touches[0].clientX : e.clientX;
-        const pct  = Math.max(0, Math.min(1, (cx - rect.left) / rect.width));
-        if (player.duration) {
-            player.currentTime   = pct * player.duration;
-            progressFill.style.width = (pct * 100) + '%';
-            progressThumb.style.left = (pct * 100) + '%';
-        }
+    /* ── Volume ── */
+    function updateVolIcon() {
+        const v = player.volume;
+        const m = player.muted;
+        let icon = 'ti-volume';
+        if (m || v === 0) icon = 'ti-volume-off';
+        else if (v < 0.5)  icon = 'ti-volume-2';
+        btnMute.innerHTML = `<i class="ti ${icon}"></i>`;
     }
-    progressWrap.addEventListener('mousedown',  (e) => { scrubbing = true; scrubAt(e); e.stopPropagation(); });
-    progressWrap.addEventListener('touchstart', (e) => { scrubbing = true; scrubAt(e); e.stopPropagation(); }, { passive: true });
-    progressWrap.addEventListener('mousemove',  (e) => { if (scrubbing) scrubAt(e); });
-    progressWrap.addEventListener('touchmove',  (e) => { if (scrubbing) scrubAt(e); }, { passive: true });
-    document.addEventListener('mouseup',  () => { scrubbing = false; });
-    document.addEventListener('touchend', () => { scrubbing = false; });
+    btnMute.addEventListener('click', (e) => {
+        e.stopPropagation();
+        player.muted = !player.muted;
+        updateVolIcon();
+        showControls();
+    });
+    volSlider.addEventListener('input', (e) => {
+        e.stopPropagation();
+        player.volume = +volSlider.value;
+        player.muted  = player.volume === 0;
+        updateVolIcon();
+        showControls();
+    });
+    volSlider.addEventListener('click', (e) => e.stopPropagation());
+    player.addEventListener('volumechange', updateVolIcon);
+    updateVolIcon();
 
-    /* Loader */
+    /* ── Loader ── */
     function setLoading(on) { loader.classList.toggle('hidden', !on); }
     player.addEventListener('waiting',   () => setLoading(true));
     player.addEventListener('playing',   () => setLoading(false));
     player.addEventListener('canplay',   () => setLoading(false));
     player.addEventListener('loadstart', () => setLoading(true));
     player.addEventListener('error', () => {
-        const m = { 1: 'Завантаження перервано.', 2: 'Помилка мережі.', 3: 'Помилка декодування.', 4: 'Формат не підтримується.' };
+        const m = { 1:'Завантаження перервано.', 2:'Помилка мережі.', 3:'Помилка декодування.', 4:'Формат не підтримується.' };
         showError(m[player.error?.code] || 'Невідома помилка.');
     });
 
+    /* ── Error ── */
     function showError(msg) { setLoading(false); errorMsg.textContent = msg; errorOv.classList.add('visible'); }
-    function hideError()     { errorOv.classList.remove('visible'); }
+    function hideError()    { errorOv.classList.remove('visible'); }
     retryBtn.addEventListener('click', () => { if (currentLabel) loadVideo(currentLabel, false); });
 
-    /* Quality menu */
+    /* ── Quality menu ── */
     function openMenu()  {
         menuOpen = true;
         qualityMenu.classList.add('open');
@@ -498,7 +623,7 @@
         showControls();
     });
 
-    /* Controls show/hide */
+    /* ── Controls visibility ── */
     function showControls() {
         controls.classList.add('visible');
         clearTimeout(uiTimer);
@@ -507,14 +632,44 @@
         }
     }
 
-    wrapper.addEventListener('touchstart', (e) => {
-        if (controls.contains(e.target)) return;
+    /* Tap zones for double-tap skip on mobile */
+    let tapTimer = null;
+    let tapCount = 0;
+    let tapSide  = null;
+
+    wrapper.addEventListener('touchend', (e) => {
+        if (controls.contains(e.target) || qualityMenu.contains(e.target)) return;
         if (menuOpen) { closeMenu(); return; }
-        controls.classList.contains('visible') ? controls.classList.remove('visible') : showControls();
-    }, { passive: true });
+
+        const x    = e.changedTouches[0].clientX;
+        const side = x < wrapper.clientWidth / 2 ? 'left' : 'right';
+
+        if (tapSide !== side) { tapCount = 0; }
+        tapSide = side;
+        tapCount++;
+
+        clearTimeout(tapTimer);
+        tapTimer = setTimeout(() => {
+            if (tapCount === 1) {
+                controls.classList.contains('visible') ? controls.classList.remove('visible') : showControls();
+            } else {
+                /* double tap = skip */
+                if (side === 'left') {
+                    player.currentTime = Math.max(0, player.currentTime - 10);
+                    flashSkip(skipBack, 'back');
+                } else {
+                    player.currentTime = Math.min(player.duration || 0, player.currentTime + 10);
+                    flashSkip(skipFwd, 'fwd');
+                }
+                showControls();
+            }
+            tapCount = 0;
+        }, 250);
+    });
 
     wrapper.addEventListener('click', (e) => {
-        if (controls.contains(e.target)) return;
+        if (isTouch) return; /* handled by touchend */
+        if (controls.contains(e.target) || qualityMenu.contains(e.target)) return;
         if (menuOpen) { closeMenu(); return; }
         if (controls.classList.contains('visible')) togglePlay();
         else showControls();
@@ -523,23 +678,46 @@
     player.addEventListener('play',  showControls);
     player.addEventListener('pause', showControls);
 
-    /* Fullscreen */
+    /* ── Fullscreen ── */
+    function requestFs() {
+        const el = wrapper;
+        const fn = el.requestFullscreen
+                || el.webkitRequestFullscreen
+                || el.mozRequestFullScreen
+                || el.msRequestFullscreen;
+        if (fn) fn.call(el).catch(() => {});
+    }
+    function exitFs() {
+        const fn = document.exitFullscreen
+               || document.webkitExitFullscreen
+               || document.mozCancelFullScreen
+               || document.msExitFullscreen;
+        if (fn) fn.call(document).catch(() => {});
+    }
+    function isFs() {
+        return !!(document.fullscreenElement
+               || document.webkitFullscreenElement
+               || document.mozFullScreenElement
+               || document.msFullscreenElement);
+    }
+
     btnFs.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-            (wrapper.requestFullscreen || wrapper.webkitRequestFullscreen).call(wrapper);
-        } else {
-            (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-        }
+        isFs() ? exitFs() : requestFs();
         showControls();
     });
+
     function onFsChange() {
-        const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-        btnFs.innerHTML = inFs ? '<i class="ti ti-arrows-minimize"></i>' : '<i class="ti ti-arrows-maximize"></i>';
+        const inFs = isFs();
+        btnFs.innerHTML = inFs
+            ? '<i class="ti ti-arrows-minimize"></i>'
+            : '<i class="ti ti-arrows-maximize"></i>';
         try { inFs ? tg?.requestFullscreen?.() : tg?.exitFullscreen?.(); } catch {}
     }
     document.addEventListener('fullscreenchange',       onFsChange);
     document.addEventListener('webkitfullscreenchange', onFsChange);
+    document.addEventListener('mozfullscreenchange',    onFsChange);
+    document.addEventListener('MSFullscreenChange',     onFsChange);
 })();
 </script>
 </body>
