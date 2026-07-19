@@ -111,10 +111,11 @@
             padding: 0 0 8px;
             background: linear-gradient(transparent, rgba(0,0,0,0.85) 55%);
             opacity: 0;
+            pointer-events: none;   /* невидимі контроли не мають ловити кліки */
             transition: opacity 0.3s;
             z-index: 20;
         }
-        #controls.visible { opacity: 1; }
+        #controls.visible { opacity: 1; pointer-events: auto; }
 
         /* Progress */
         #progress-wrap {
@@ -287,7 +288,7 @@
 </head>
 <body>
 <div id="wrapper">
-    <video id="player" playsinline webkit-playsinline x5-playsinline preload="metadata"></video>
+    <video id="player" playsinline webkit-playsinline x5-playsinline autoplay preload="auto"></video>
 
     <div id="loader"><div class="spinner"></div></div>
 
@@ -360,6 +361,7 @@
 (function () {
     const tg = window.Telegram?.WebApp;
     if (tg) {
+        tg.ready();
         tg.expand();
         tg.setHeaderColor('#000000');
         tg.setBackgroundColor('#000000');
@@ -492,9 +494,16 @@
         });
     }
 
-    function restorePlayback(time, play) {
+    function restorePlayback(time, wasPlaying) {
         if (time > 0) player.currentTime = time;
-        if (play) player.play().catch(() => {});
+        setLoading(false);
+        // Автостарт: браузери блокують автоплей зі звуком. Пробуємо звичайно,
+        // а якщо заблоковано — вмикаємо без звуку (це дозволено), і показуємо,
+        // що звук вимкнено. wasPlaying=true при зміні якості — теж стартуємо.
+        player.play().catch(() => {
+            player.muted = true;   // 'volumechange' listener оновить іконку звуку
+            player.play().catch(() => { showControls(); });
+        });
     }
 
     function updateQualityUI(label) {
