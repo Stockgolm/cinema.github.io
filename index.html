@@ -652,11 +652,11 @@
     function showControls() {
         controls.classList.add('visible');
         clearTimeout(uiTimer);
-        // Автоприховування ТІЛЬКИ під час відтворення. На паузі контроли завжди видно.
+        // Автоприховування ТІЛЬКИ під час відтворення. На паузі — завжди видно.
         if (!player.paused && !menuOpen) {
             uiTimer = setTimeout(() => {
                 if (!menuOpen && !player.paused) controls.classList.remove('visible');
-            }, 3500);
+            }, 5000);   // 5с — щоб не зникало занадто швидко
         }
     }
     function hideControls() {
@@ -664,20 +664,13 @@
         controls.classList.remove('visible');
     }
 
-    /* Рух миші показує панель. Використовуємо pointermove + pointerType,
-       бо глобальний isTouch хибно спрацьовує на ПК у Telegram
-       (maxTouchPoints>0 на багатьох десктопах) і блокував mousemove. */
-    wrapper.addEventListener('pointermove', (e) => {
+    /* Рух миші показує панель. Слухаємо на DOCUMENT (не wrapper), щоб події
+       надходили й у повноекранному режимі, і будь-де на сторінці. mousemove
+       не гейтимо по isTouch (на ПК у Telegram maxTouchPoints>0 хибно=true). */
+    document.addEventListener('mousemove', showControls);
+    document.addEventListener('pointermove', (e) => {
         if (e.pointerType === 'mouse') showControls();
     });
-    wrapper.addEventListener('pointerenter', (e) => {
-        if (e.pointerType === 'mouse') showControls();
-    });
-    wrapper.addEventListener('pointerleave', (e) => {
-        if (e.pointerType === 'mouse' && !menuOpen && !player.paused) hideControls();
-    });
-    // Фолбек для старих WebView без Pointer Events (mousemove не гейтимо по isTouch).
-    wrapper.addEventListener('mousemove', showControls);
 
     /* Click on video area (not controls) — тільки миша */
     wrapper.addEventListener('click', (e) => {
@@ -821,7 +814,10 @@
         btnFs.innerHTML = inFs
             ? '<i class="ti ti-arrows-minimize"></i>'
             : '<i class="ti ti-arrows-maximize"></i>';
-        try { inFs ? tg?.requestFullscreen?.() : tg?.exitFullscreen?.(); } catch {}
+        // НЕ викликаємо tg.requestFullscreen — на ПК Telegram перехоплює WebView
+        // і сторінка перестає отримувати рух миші (панель «замерзає»).
+        // Нативний браузерний fullscreen на wrapper цього достатньо.
+        showControls();
     }
     document.addEventListener('fullscreenchange',          onFsChange);
     document.addEventListener('webkitfullscreenchange',    onFsChange);
