@@ -300,6 +300,19 @@
         .qm-check { font-size: 15px; color: #e50914; visibility: hidden; flex-shrink: 0; }
         .qm-item.active .qm-check { visibility: visible; }
 
+        /* Бейдж версії: показує, ЯКА версія плеєра реально завантажилась
+           (діагностика кешу Telegram/GitHub Pages). Зникає за кілька секунд. */
+        #ver-badge {
+            position: absolute;
+            top: 8px; left: 10px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.45);
+            z-index: 40;
+            pointer-events: none;
+            transition: opacity 1s;
+        }
+        #ver-badge.fade { opacity: 0; }
+
         /* Keyboard hint */
         #kb-hint {
             position: absolute;
@@ -332,6 +345,7 @@
     </div>
 
     <div id="kb-hint"></div>
+    <div id="ver-badge">player v9</div>
 
     <div id="error-overlay">
         <i class="ov-icon ti ti-alert-triangle" aria-hidden="true"></i>
@@ -950,6 +964,9 @@
     // Початковий стан іконки: на телефоні Telegram-фулскрін уже активний
     // з моменту запуску, тож кнопка одразу має показувати «згорнути».
     syncFsIcon();
+
+    // Бейдж версії гасне за 5с (діагностика: видно, чи не старий кеш).
+    setTimeout(() => document.getElementById('ver-badge')?.classList.add('fade'), 5000);
 })();
 </script>
 </body>
