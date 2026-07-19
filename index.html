@@ -300,18 +300,39 @@
         .qm-check { font-size: 15px; color: #e50914; visibility: hidden; flex-shrink: 0; }
         .qm-item.active .qm-check { visibility: visible; }
 
-        /* Бейдж версії: показує, ЯКА версія плеєра реально завантажилась
-           (діагностика кешу Telegram/GitHub Pages). Зникає за кілька секунд. */
+        /* Бейдж версії: показує, ЯКА версія плеєра реально завантажилась,
+           платформу і версію Bot API. Тап по ньому відкриває діагностику.
+           Після зникнення зона тапу лишається активною (кут екрана). */
         #ver-badge {
             position: absolute;
-            top: 8px; left: 10px;
+            top: 8px; left: 8px;
+            padding: 6px 10px;
             font-size: 11px;
             color: rgba(255,255,255,0.45);
-            z-index: 40;
-            pointer-events: none;
+            z-index: 61;
+            cursor: pointer;
             transition: opacity 1s;
+            user-select: none;
         }
         #ver-badge.fade { opacity: 0; }
+
+        /* Діагностична панель (тап/клік по бейджу версії) */
+        #dbg-panel {
+            position: absolute;
+            top: 40px; left: 8px; right: 8px;
+            max-height: 65%;
+            overflow: auto;
+            background: rgba(0,0,0,0.88);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 10px;
+            font: 10px/1.5 Consolas, monospace;
+            color: #8f8;
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: none;
+            z-index: 60;
+        }
 
         /* Keyboard hint */
         #kb-hint {
@@ -345,7 +366,8 @@
     </div>
 
     <div id="kb-hint"></div>
-    <div id="ver-badge">player v9</div>
+    <div id="ver-badge">player v10</div>
+    <div id="dbg-panel"></div>
 
     <div id="error-overlay">
         <i class="ov-icon ti ti-alert-triangle" aria-hidden="true"></i>
@@ -403,22 +425,62 @@
 
 <script>
 (function () {
+    /* ── Діагностика ──
+       Всі ключові кроки й помилки пишуться в лог. Тап/клік по бейджу
+       версії (лівий верхній кут) відкриває панель із цим логом. */
+    const dbgLog = [];
+    function dbg(msg) {
+        dbgLog.push(new Date().toTimeString().slice(0, 8) + ' ' + msg);
+        if (dbgLog.length > 80) dbgLog.shift();
+        const p = document.getElementById('dbg-panel');
+        if (p && p.style.display === 'block') renderDbg();
+    }
+    function renderDbg() {
+        const p = document.getElementById('dbg-panel');
+        const t = window.Telegram?.WebApp;
+        p.textContent =
+            'platform=' + (t?.platform || 'browser') +
+            '  botAPI=' + (t?.version || '-') +
+            '\nfullscreenEnabled=' + !!document.fullscreenEnabled +
+            '  tg.isFullscreen=' + (t ? String(t.isFullscreen) : '-') +
+            '\nfsElement=' + !!(document.fullscreenElement || document.webkitFullscreenElement) +
+            '  viewport=' + window.innerWidth + 'x' + window.innerHeight +
+            '\n──────────\n' + dbgLog.join('\n');
+    }
+    function toggleDbg() {
+        const p = document.getElementById('dbg-panel');
+        const show = p.style.display !== 'block';
+        p.style.display = show ? 'block' : 'none';
+        if (show) renderDbg();
+    }
+    // Глобальні пастки: тихе падіння скрипта більше не буде невидимим.
+    window.addEventListener('error', (e) =>
+        dbg('JS ERROR: ' + (e.message || e.type) + ' [' + ((e.filename || '').split('/').pop()) + ':' + e.lineno + ']'));
+    window.addEventListener('unhandledrejection', (e) =>
+        dbg('PROMISE ERROR: ' + (e.reason?.message || e.reason)));
+
     const tg = window.Telegram?.WebApp;
     const tgPlatform = tg?.platform || '';
+    dbg('init: platform=' + (tgPlatform || 'browser') + ' botAPI=' + (tg?.version || '-')
+        + ' fsEnabled=' + !!document.fullscreenEnabled);
     // Мобільні платформи Telegram, де потрібен повноекранний WebApp.
     const isMobileTg = ['android', 'ios', 'android_x'].includes(tgPlatform);
 
     if (tg) {
         tg.ready();
         tg.expand();
-        tg.setHeaderColor('#000000');
-        tg.setBackgroundColor('#000000');
+        // Ці методи в офіційній лібі КИДАЮТЬ виняток на старих клієнтах —
+        // без try один такий виняток вбивав би ВЕСЬ скрипт (жодна кнопка
+        // не працювала б). Тому все — у try/catch із логом.
+        try { tg.setHeaderColor('#000000'); tg.setBackgroundColor('#000000'); }
+        catch (e) { dbg('setColor: ' + (e.message || e)); }
         // Заборонити вертикальний свайп (щоб не закривав WebApp під час перегляду).
-        try { tg.disableVerticalSwipes?.(); } catch {}
+        try { tg.disableVerticalSwipes?.(); } catch (e) { dbg('disableVerticalSwipes: ' + (e.message || e)); }
         // На телефоні розгортаємо WebApp на ВЕСЬ екран (Bot API 8.0+).
         // На ПК цього НЕ робимо — там Telegram-фулскрін ламає керування мишею.
         if (isMobileTg) {
-            try { tg.requestFullscreen?.(); } catch {}
+            try { tg.requestFullscreen?.(); dbg('auto tg.requestFullscreen sent'); }
+            catch (e) { dbg('auto tg.requestFullscreen: ' + (e.message || e)); }
         }
         // Підлаштовуємо висоту під реальний viewport WebApp (динамічно).
         const applyVH = () => {
@@ -439,8 +501,17 @@
         tg.onEvent?.('safeAreaChanged', applyInsets);
         tg.onEvent?.('contentSafeAreaChanged', applyInsets);
         // Реакція на Telegram-fullscreen (Bot API 8.0): оновити висоту + іконку.
-        tg.onEvent?.('fullscreenChanged', () => { applyVH(); syncFsIcon?.(); });
-        tg.onEvent?.('fullscreenFailed', () => { syncFsIcon?.(); });
+        tg.onEvent?.('fullscreenChanged', () => {
+            dbg('tg fullscreenChanged → isFullscreen=' + tg.isFullscreen);
+            applyVH(); syncFsIcon?.();
+        });
+        // Telegram-фулскрін не вдався (старий клієнт / платформа): якщо його
+        // просив користувач кнопкою — пробуємо браузерний fullscreen як запасний.
+        tg.onEvent?.('fullscreenFailed', (p) => {
+            dbg('tg fullscreenFailed: ' + (p && p.error || '?'));
+            syncFsIcon?.();
+            if (fsWanted) elementFsRequest();
+        });
     }
 
     const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
@@ -482,6 +553,7 @@
     let skipTimers   = {};
     let justTouched  = false;   // тач щойно був → ігнорувати синтетичні mouse-події
     let hoverUI      = false;   // миша над панеллю → не ховати її таймером
+    let fsWanted     = false;   // fullscreen просив користувач (для фолбеків/підказок)
 
     /* ── Parse URL ── */
     const dataParam = new URLSearchParams(window.location.search).get('data');
@@ -544,15 +616,18 @@
                        || player.canPlayType('application/x-mpegURL');
 
         if (isHls && nativeHls) {
+            dbg('load: native HLS');
             player.src = url;
             player.addEventListener('loadedmetadata',
                 () => restorePlayback(savedTime, wasPlaying), { once: true });
             // Якщо рідне відтворення впало — пробуємо hls.js.
             player.addEventListener('error',
                 () => tryHlsJs(url, savedTime, wasPlaying), { once: true });
-        } else if (isHls && Hls.isSupported()) {
+        } else if (isHls && typeof Hls !== 'undefined' && Hls.isSupported()) {
             tryHlsJs(url, savedTime, wasPlaying);
         } else {
+            // Або не-HLS, або hls.js не завантажився (CDN) — пробуємо напряму.
+            dbg('load: direct src (Hls lib: ' + (typeof Hls !== 'undefined') + ')');
             player.src = url;
             player.addEventListener('loadedmetadata',
                 () => restorePlayback(savedTime, wasPlaying), { once: true });
@@ -560,6 +635,14 @@
     }
 
     function tryHlsJs(url, savedTime, wasPlaying) {
+        // Захист: якщо CDN з hls.js заблокований, раніше тут падав ReferenceError
+        // і ВЕСЬ плеєр умирав (жодна кнопка не працювала).
+        if (typeof Hls === 'undefined' || !Hls.isSupported()) {
+            dbg('tryHlsJs: hls.js недоступний');
+            showError('Бібліотека відтворення не завантажилась. Перевірте інтернет і спробуйте ще раз.');
+            return;
+        }
+        dbg('load: hls.js');
         if (hls) { hls.destroy(); hls = null; }
         hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 600, enableWorker: true });
         hls.loadSource(url);
@@ -769,7 +852,8 @@
 
     /* Click on video area (not controls) — тільки миша */
     wrapper.addEventListener('click', (e) => {
-        if (controls.contains(e.target) || qualityMenu.contains(e.target)) return;
+        if (controls.contains(e.target) || qualityMenu.contains(e.target)
+            || e.target.closest?.('#ver-badge, #dbg-panel')) return;
         if (menuOpen) { closeMenu(); return; }
         // touchend вже обробляє тап і ставить justTouched → ігноруємо синтетичний click.
         if (justTouched) return;
@@ -782,7 +866,8 @@
        який уже обробляється в touchend як ±10 сек. */
     wrapper.addEventListener('dblclick', (e) => {
         if (justTouched) return;
-        if (controls.contains(e.target) || qualityMenu.contains(e.target)) return;
+        if (controls.contains(e.target) || qualityMenu.contains(e.target)
+            || e.target.closest?.('#ver-badge, #dbg-panel')) return;
         isFs() ? exitFs() : requestFs();
         showControls();
     });
@@ -792,7 +877,8 @@
     wrapper.addEventListener('touchend', (e) => {
         justTouched = true;                       // придушити синтетичний click
         setTimeout(() => { justTouched = false; }, 500);
-        if (controls.contains(e.target) || qualityMenu.contains(e.target)) return;
+        if (controls.contains(e.target) || qualityMenu.contains(e.target)
+            || e.target.closest?.('#ver-badge, #dbg-panel')) return;
         if (menuOpen) { closeMenu(); return; }
         const x    = e.changedTouches[0].clientX;
         const side = x < wrapper.clientWidth / 2 ? 'L' : 'R';
@@ -878,28 +964,49 @@
         }
     });
 
-    /* ── Fullscreen ── */
+    /* ── Fullscreen ──
+       ВАЖЛИВО: всередині Telegram браузерний element.requestFullscreen()
+       розгортає елемент лише В МЕЖАХ вікна міні-апки (воно не збільшується) —
+       візуально «нічого не відбувається». Єдине, що реально розгортає вікно
+       міні-апки на весь екран — tg.requestFullscreen() (Bot API 8.0).
+       Тому пріоритет: Telegram-фулскрін → браузерний (звичайний браузер). */
+    function elementFsRequest() {
+        const fn = wrapper.requestFullscreen
+                || wrapper.webkitRequestFullscreen
+                || wrapper.mozRequestFullScreen
+                || wrapper.msRequestFullscreen;
+        if (!fn) { dbg('elementFS: API відсутнє'); fsUnavailableHint(); return; }
+        try {
+            const r = fn.call(wrapper);
+            if (r && r.then) r.then(
+                () => dbg('elementFS: ok'),
+                (e) => { dbg('elementFS reject: ' + (e && e.message || e)); fsUnavailableHint(); });
+        } catch (e) { dbg('elementFS throw: ' + (e.message || e)); fsUnavailableHint(); }
+    }
+    function fsUnavailableHint() {
+        if (fsWanted && !isFs())
+            showKbHint('Fullscreen недоступний — оновіть Telegram');
+    }
     function requestFs() {
-        /* iOS — fullscreen через сам video елемент */
+        fsWanted = true;
+        dbg('requestFs()');
+        /* iOS — нативний fullscreen самого <video> (з системними контролами) */
         if (player.webkitEnterFullscreen && !document.fullscreenEnabled) {
-            try { player.webkitEnterFullscreen(); return; } catch {}
+            try { player.webkitEnterFullscreen(); dbg('webkitEnterFullscreen ok'); return; }
+            catch (e) { dbg('webkitEnterFullscreen: ' + (e.message || e)); }
         }
-        const el = wrapper;
-        const fn = el.requestFullscreen
-                || el.webkitRequestFullscreen
-                || el.mozRequestFullScreen
-                || el.msRequestFullscreen;
-        if (fn) {
-            try {
-                const r = fn.call(el);
-                if (r && r.catch) r.catch(() => tgFsFallback(true));
-            } catch { tgFsFallback(true); }
-            return;
+        /* Усередині Telegram — тільки tg.requestFullscreen міняє розмір вікна.
+           Якщо клієнт його не підтримує, прилетить fullscreenFailed, і там
+           спробуємо elementFsRequest() як запасний варіант. */
+        if (tg && typeof tg.requestFullscreen === 'function') {
+            try { tg.requestFullscreen(); dbg('tg.requestFullscreen sent'); return; }
+            catch (e) { dbg('tg.requestFullscreen: ' + (e.message || e)); }
         }
-        // Немає браузерного fullscreen → пробуємо Telegram (мобільний).
-        tgFsFallback(true);
+        elementFsRequest();
     }
     function exitFs() {
+        fsWanted = false;
+        dbg('exitFs()');
         if (document.webkitExitFullscreen && player.webkitDisplayingFullscreen) {
             try { document.webkitExitFullscreen(); return; } catch {}
         }
@@ -916,18 +1023,11 @@
                 const r = fn.call(document);
                 if (r && r.catch) r.catch(() => {});
             } catch {}
-            // Виходимо ТІЛЬКИ з браузерного FS. Telegram-фулскрін не чіпаємо:
-            // на телефоні він увімкнений з самого старту, і згортати WebApp
-            // разом із браузерним fullscreen не можна.
-            return;
         }
-        if (tg?.isFullscreen) tgFsFallback(false);
-    }
-    // Фолбек через Telegram fullscreen (Bot API 8.0) — коли браузерний fullscreen
-    // недоступний (Telegram Desktop його блокує). Працює на ПК і на телефоні.
-    function tgFsFallback(on) {
-        if (!tg) return;
-        try { on ? tg.requestFullscreen?.() : tg.exitFullscreen?.(); } catch {}
+        if (tg?.isFullscreen) {
+            try { tg.exitFullscreen?.(); dbg('tg.exitFullscreen sent'); }
+            catch (e) { dbg('tg.exitFullscreen: ' + (e.message || e)); }
+        }
     }
     function isFs() {
         return !!(document.fullscreenElement
@@ -951,6 +1051,7 @@
     });
 
     function onFsChange() {
+        dbg('fsChange: fsElement=' + !!(document.fullscreenElement || document.webkitFullscreenElement));
         syncFsIcon();
         showControls();
     }
@@ -965,8 +1066,17 @@
     // з моменту запуску, тож кнопка одразу має показувати «згорнути».
     syncFsIcon();
 
-    // Бейдж версії гасне за 5с (діагностика: видно, чи не старий кеш).
-    setTimeout(() => document.getElementById('ver-badge')?.classList.add('fade'), 5000);
+    /* Бейдж версії: показує версію + платформу, гасне за 6с, але зона тапу
+       лишається — тап по лівому верхньому куту відкриває діагностику. */
+    const verBadge = document.getElementById('ver-badge');
+    verBadge.textContent = 'v10 · ' + (tgPlatform || 'browser') + ' ' + (tg?.version || '');
+    verBadge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        verBadge.classList.remove('fade');
+        toggleDbg();
+    });
+    setTimeout(() => verBadge.classList.add('fade'), 6000);
+    dbg('init done');
 })();
 </script>
 </body>
