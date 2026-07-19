@@ -404,6 +404,7 @@
     let scrubbing    = false;
     let kbHintTimer  = null;
     let skipTimers   = {};
+    let justTouched  = false;   // тач щойно був → ігнорувати синтетичний click
 
     /* ── Parse URL ── */
     const dataParam = new URLSearchParams(window.location.search).get('data');
@@ -663,24 +664,36 @@
         controls.classList.remove('visible');
     }
 
-    /* Mouse movement shows controls on desktop */
-    wrapper.addEventListener('mousemove', () => { if (!isTouch) showControls(); });
-    wrapper.addEventListener('mouseenter', () => { if (!isTouch) showControls(); });
-    wrapper.addEventListener('mouseleave', () => { if (!isTouch && !menuOpen && !player.paused) hideControls(); });
+    /* Рух миші показує панель. Використовуємо pointermove + pointerType,
+       бо глобальний isTouch хибно спрацьовує на ПК у Telegram
+       (maxTouchPoints>0 на багатьох десктопах) і блокував mousemove. */
+    wrapper.addEventListener('pointermove', (e) => {
+        if (e.pointerType === 'mouse') showControls();
+    });
+    wrapper.addEventListener('pointerenter', (e) => {
+        if (e.pointerType === 'mouse') showControls();
+    });
+    wrapper.addEventListener('pointerleave', (e) => {
+        if (e.pointerType === 'mouse' && !menuOpen && !player.paused) hideControls();
+    });
+    // Фолбек для старих WebView без Pointer Events (mousemove не гейтимо по isTouch).
+    wrapper.addEventListener('mousemove', showControls);
 
-    /* Click on video area (not controls) */
+    /* Click on video area (not controls) — тільки миша */
     wrapper.addEventListener('click', (e) => {
         if (controls.contains(e.target) || qualityMenu.contains(e.target)) return;
         if (menuOpen) { closeMenu(); return; }
-        if (!isTouch) {
-            togglePlay();
-            showControls();
-        }
+        // touchend вже обробляє тап і ставить justTouched → ігноруємо синтетичний click.
+        if (justTouched) return;
+        togglePlay();
+        showControls();
     });
 
     /* Touch: single tap = show/hide, double tap = skip */
     let tapTimer = null, tapCount = 0, tapSide = null;
     wrapper.addEventListener('touchend', (e) => {
+        justTouched = true;                       // придушити синтетичний click
+        setTimeout(() => { justTouched = false; }, 500);
         if (controls.contains(e.target) || qualityMenu.contains(e.target)) return;
         if (menuOpen) { closeMenu(); return; }
         const x    = e.changedTouches[0].clientX;
