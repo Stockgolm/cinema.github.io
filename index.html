@@ -10,8 +10,14 @@
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+        :root { --app-h: 100vh; }
+
         body, html {
-            height: 100%;
+            /* Реальна висота WebApp: --app-h ставить JS з Telegram viewport,
+               100dvh — фолбек для браузера, 100vh — для старих WebView. */
+            height: 100vh;
+            height: 100dvh;
+            height: var(--app-h);
             background: #000;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -23,7 +29,9 @@
         #wrapper {
             position: relative;
             width: 100%;
-            height: 100%;
+            height: 100vh;
+            height: 100dvh;
+            height: var(--app-h);
         }
 
         video {
@@ -108,7 +116,8 @@
         #controls {
             position: absolute;
             bottom: 0; left: 0; right: 0;
-            padding: 0 0 8px;
+            /* safe-area — щоб кнопки не ховались під панеллю Telegram/вирізом */
+            padding: 0 0 calc(8px + env(safe-area-inset-bottom, 0px));
             background: linear-gradient(transparent, rgba(0,0,0,0.85) 55%);
             opacity: 0;
             pointer-events: none;   /* невидимі контроли не мають ловити кліки */
@@ -360,11 +369,29 @@
 <script>
 (function () {
     const tg = window.Telegram?.WebApp;
+    const tgPlatform = tg?.platform || '';
+    // Мобільні платформи Telegram, де потрібен повноекранний WebApp.
+    const isMobileTg = ['android', 'ios', 'android_x'].includes(tgPlatform);
+
     if (tg) {
         tg.ready();
         tg.expand();
         tg.setHeaderColor('#000000');
         tg.setBackgroundColor('#000000');
+        // Заборонити вертикальний свайп (щоб не закривав WebApp під час перегляду).
+        try { tg.disableVerticalSwipes?.(); } catch {}
+        // На телефоні розгортаємо WebApp на ВЕСЬ екран (Bot API 8.0+).
+        // На ПК цього НЕ робимо — там Telegram-фулскрін ламає керування мишею.
+        if (isMobileTg) {
+            try { tg.requestFullscreen?.(); } catch {}
+        }
+        // Підлаштовуємо висоту під реальний viewport WebApp (динамічно).
+        const applyVH = () => {
+            const h = tg.viewportStableHeight || tg.viewportHeight || window.innerHeight;
+            document.documentElement.style.setProperty('--app-h', h + 'px');
+        };
+        applyVH();
+        tg.onEvent?.('viewportChanged', applyVH);
     }
 
     const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
