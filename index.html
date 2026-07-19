@@ -392,6 +392,9 @@
         };
         applyVH();
         tg.onEvent?.('viewportChanged', applyVH);
+        // Реакція на Telegram-fullscreen (Bot API 8.0): оновити висоту + іконку.
+        tg.onEvent?.('fullscreenChanged', () => { applyVH(); syncFsIcon?.(); });
+        tg.onEvent?.('fullscreenFailed', () => { syncFsIcon?.(); });
     }
 
     const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
@@ -799,35 +802,60 @@
 
     /* ── Fullscreen ── */
     function requestFs() {
-        /* На iOS — fullscreen через сам video елемент */
-        if (player.webkitEnterFullscreen) {
-            player.webkitEnterFullscreen();
-            return;
+        /* iOS — fullscreen через сам video елемент */
+        if (player.webkitEnterFullscreen && !document.fullscreenEnabled) {
+            try { player.webkitEnterFullscreen(); return; } catch {}
         }
         const el = wrapper;
         const fn = el.requestFullscreen
                 || el.webkitRequestFullscreen
                 || el.mozRequestFullScreen
                 || el.msRequestFullscreen;
-        if (fn) fn.call(el).catch(() => {});
+        if (fn) {
+            try {
+                const r = fn.call(el);
+                if (r && r.catch) r.catch(() => tgFsFallback(true));
+            } catch { tgFsFallback(true); }
+            return;
+        }
+        // Немає браузерного fullscreen → пробуємо Telegram (мобільний).
+        tgFsFallback(true);
     }
     function exitFs() {
         if (document.webkitExitFullscreen && player.webkitDisplayingFullscreen) {
-            document.webkitExitFullscreen();
-            return;
+            try { document.webkitExitFullscreen(); return; } catch {}
         }
         const fn = document.exitFullscreen
                || document.webkitExitFullscreen
                || document.mozCancelFullScreen
                || document.msExitFullscreen;
-        if (fn) fn.call(document).catch(() => {});
+        if (fn && document.fullscreenElement !== null) {
+            try {
+                const r = fn.call(document);
+                if (r && r.catch) r.catch(() => {});
+            } catch {}
+        }
+        tgFsFallback(false);
+    }
+    // Фолбек через Telegram fullscreen (Bot API 8.0) — коли браузерний fullscreen
+    // недоступний (Telegram Desktop його блокує). Працює на ПК і на телефоні.
+    function tgFsFallback(on) {
+        if (!tg) return;
+        try { on ? tg.requestFullscreen?.() : tg.exitFullscreen?.(); } catch {}
     }
     function isFs() {
         return !!(document.fullscreenElement
                || document.webkitFullscreenElement
                || document.mozFullScreenElement
                || document.msFullscreenElement
-               || player.webkitDisplayingFullscreen);
+               || player.webkitDisplayingFullscreen
+               || tg?.isFullscreen);     // Telegram fullscreen (Bot API 8.0)
+    }
+
+    function syncFsIcon() {
+        btnFs.innerHTML = isFs()
+            ? '<i class="ti ti-arrows-minimize"></i>'
+            : '<i class="ti ti-arrows-maximize"></i>';
     }
 
     btnFs.addEventListener('click', (e) => {
@@ -837,13 +865,7 @@
     });
 
     function onFsChange() {
-        const inFs = isFs();
-        btnFs.innerHTML = inFs
-            ? '<i class="ti ti-arrows-minimize"></i>'
-            : '<i class="ti ti-arrows-maximize"></i>';
-        // НЕ викликаємо tg.requestFullscreen — на ПК Telegram перехоплює WebView
-        // і сторінка перестає отримувати рух миші (панель «замерзає»).
-        // Нативний браузерний fullscreen на wrapper цього достатньо.
+        syncFsIcon();
         showControls();
     }
     document.addEventListener('fullscreenchange',          onFsChange);
