@@ -34,6 +34,16 @@
             height: var(--app-h);
         }
 
+        /* У браузерному fullscreen wrapper має заповнити ВЕСЬ екран
+           (перекриваємо var(--app-h), який може бути меншим за екран). */
+        #wrapper:fullscreen,
+        #wrapper:-webkit-full-screen,
+        #wrapper:-moz-full-screen { width: 100%; height: 100%; }
+
+        /* Курсор ховається разом із панеллю під час відтворення. */
+        #wrapper.hide-cursor,
+        #wrapper.hide-cursor * { cursor: none !important; }
+
         video {
             width: 100%;
             height: 100%;
@@ -116,8 +126,11 @@
         #controls {
             position: absolute;
             bottom: 0; left: 0; right: 0;
-            /* safe-area — щоб кнопки не ховались під панеллю Telegram/вирізом */
-            padding: 0 0 calc(8px + env(safe-area-inset-bottom, 0px));
+            /* safe-area — щоб кнопки не ховались під панеллю Telegram/вирізом.
+               env() у Telegram WebView часто = 0, тому беремо max з інсетами,
+               які віддає сам Telegram (--tg-sa-bottom ставить JS). */
+            padding: 0 0 calc(8px + env(safe-area-inset-bottom, 0px)); /* фолбек без max() */
+            padding: 0 0 calc(8px + max(env(safe-area-inset-bottom, 0px), var(--tg-sa-bottom, 0px)));
             background: linear-gradient(transparent, rgba(0,0,0,0.85) 55%);
             opacity: 0;
             pointer-events: none;   /* невидимі контроли не мають ловити кліки */
@@ -187,6 +200,12 @@
         #btn-back,
         #btn-fwd { display: none; }
 
+        /* На сенсорних екранах показуємо кнопки ±10с — явна навігація пальцем
+           (подвійний тап теж працює, але кнопки очевидніші). */
+        @media (pointer: coarse) {
+            #btn-back, #btn-fwd { display: flex; }
+        }
+
         #time-display {
             font-size: 12px;
             color: rgba(255,255,255,0.85);
@@ -247,7 +266,9 @@
         /* Quality menu */
         #quality-menu {
             position: absolute;
-            bottom: 62px; right: 8px;
+            bottom: 62px; /* фолбек без max() */
+            bottom: calc(62px + max(env(safe-area-inset-bottom, 0px), var(--tg-sa-bottom, 0px)));
+            right: 8px;
             background: rgba(15,15,15,0.97);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 10px; overflow: hidden;
@@ -392,6 +413,17 @@
         };
         applyVH();
         tg.onEvent?.('viewportChanged', applyVH);
+        // Safe-area від Telegram: env() у WebView часто = 0, тому беремо
+        // інсети з API (Bot API 8.0) і віддаємо в CSS через --tg-sa-bottom.
+        const applyInsets = () => {
+            const sa = tg.safeAreaInset || {};
+            const ca = tg.contentSafeAreaInset || {};
+            document.documentElement.style.setProperty(
+                '--tg-sa-bottom', Math.max(sa.bottom || 0, ca.bottom || 0) + 'px');
+        };
+        applyInsets();
+        tg.onEvent?.('safeAreaChanged', applyInsets);
+        tg.onEvent?.('contentSafeAreaChanged', applyInsets);
         // Реакція на Telegram-fullscreen (Bot API 8.0): оновити висоту + іконку.
         tg.onEvent?.('fullscreenChanged', () => { applyVH(); syncFsIcon?.(); });
         tg.onEvent?.('fullscreenFailed', () => { syncFsIcon?.(); });
@@ -434,7 +466,8 @@
     let scrubbing    = false;
     let kbHintTimer  = null;
     let skipTimers   = {};
-    let justTouched  = false;   // тач щойно був → ігнорувати синтетичний click
+    let justTouched  = false;   // тач щойно був → ігнорувати синтетичні mouse-події
+    let hoverUI      = false;   // миша над панеллю → не ховати її таймером
 
     /* ── Parse URL ── */
     const dataParam = new URLSearchParams(window.location.search).get('data');
@@ -681,25 +714,43 @@
     /* ── Controls visibility ── */
     function showControls() {
         controls.classList.add('visible');
+        wrapper.classList.remove('hide-cursor');
         clearTimeout(uiTimer);
-        // Автоприховування ТІЛЬКИ під час відтворення. На паузі — завжди видно.
-        if (!player.paused && !menuOpen) {
+        // Автоприховування ТІЛЬКИ під час відтворення. На паузі, з відкритим
+        // меню або коли миша над панеллю — панель видно завжди.
+        if (!player.paused && !menuOpen && !hoverUI) {
             uiTimer = setTimeout(() => {
-                if (!menuOpen && !player.paused) controls.classList.remove('visible');
+                if (!menuOpen && !player.paused && !hoverUI) {
+                    controls.classList.remove('visible');
+                    wrapper.classList.add('hide-cursor');
+                }
             }, 5000);   // 5с — щоб не зникало занадто швидко
         }
     }
     function hideControls() {
-        if (menuOpen || player.paused) return;   // на паузі не ховаємо
+        if (menuOpen || player.paused || hoverUI) return;   // на паузі не ховаємо
         controls.classList.remove('visible');
+        wrapper.classList.add('hide-cursor');
     }
 
     /* Рух миші показує панель. Слухаємо на DOCUMENT (не wrapper), щоб події
        надходили й у повноекранному режимі, і будь-де на сторінці. mousemove
-       не гейтимо по isTouch (на ПК у Telegram maxTouchPoints>0 хибно=true). */
-    document.addEventListener('mousemove', showControls);
+       не гейтимо по isTouch (на ПК у Telegram maxTouchPoints>0 хибно=true),
+       але фільтруємо синтетичний mousemove одразу після тапу (justTouched),
+       інакше на телефоні тап «сховати панель» миттєво показує її знову. */
+    document.addEventListener('mousemove', () => { if (!justTouched) showControls(); });
     document.addEventListener('pointermove', (e) => {
-        if (e.pointerType === 'mouse') showControls();
+        if (e.pointerType === 'mouse' && !justTouched) showControls();
+    });
+
+    /* Поки миша над панеллю — таймер приховування не працює (панель не зникає,
+       коли користувач цілиться в кнопку). Гейтимо по pointerType, щоб
+       синтетичні події тачу не «заморожували» панель назавжди. */
+    controls.addEventListener('pointerenter', (e) => {
+        if (e.pointerType === 'mouse') { hoverUI = true; showControls(); }
+    });
+    controls.addEventListener('pointerleave', (e) => {
+        if (e.pointerType === 'mouse') { hoverUI = false; showControls(); }
     });
 
     /* Click on video area (not controls) — тільки миша */
@@ -709,6 +760,16 @@
         // touchend вже обробляє тап і ставить justTouched → ігноруємо синтетичний click.
         if (justTouched) return;
         togglePlay();
+        showControls();
+    });
+
+    /* Подвійний клік МИШЕЮ по відео — перемкнути fullscreen (як у YouTube).
+       justTouched відсікає синтетичний dblclick після подвійного тапу,
+       який уже обробляється в touchend як ±10 сек. */
+    wrapper.addEventListener('dblclick', (e) => {
+        if (justTouched) return;
+        if (controls.contains(e.target) || qualityMenu.contains(e.target)) return;
+        isFs() ? exitFs() : requestFs();
         showControls();
     });
 
@@ -797,6 +858,9 @@
                 e.preventDefault();
                 isFs() ? exitFs() : requestFs();
                 break;
+            case 'Escape':
+                closeMenu();
+                break;
         }
     });
 
@@ -825,17 +889,25 @@
         if (document.webkitExitFullscreen && player.webkitDisplayingFullscreen) {
             try { document.webkitExitFullscreen(); return; } catch {}
         }
-        const fn = document.exitFullscreen
-               || document.webkitExitFullscreen
-               || document.mozCancelFullScreen
-               || document.msExitFullscreen;
-        if (fn && document.fullscreenElement !== null) {
+        const fsEl = document.fullscreenElement
+                  || document.webkitFullscreenElement
+                  || document.mozFullScreenElement
+                  || document.msFullscreenElement;
+        if (fsEl) {
+            const fn = document.exitFullscreen
+                   || document.webkitExitFullscreen
+                   || document.mozCancelFullScreen
+                   || document.msExitFullscreen;
             try {
                 const r = fn.call(document);
                 if (r && r.catch) r.catch(() => {});
             } catch {}
+            // Виходимо ТІЛЬКИ з браузерного FS. Telegram-фулскрін не чіпаємо:
+            // на телефоні він увімкнений з самого старту, і згортати WebApp
+            // разом із браузерним fullscreen не можна.
+            return;
         }
-        tgFsFallback(false);
+        if (tg?.isFullscreen) tgFsFallback(false);
     }
     // Фолбек через Telegram fullscreen (Bot API 8.0) — коли браузерний fullscreen
     // недоступний (Telegram Desktop його блокує). Працює на ПК і на телефоні.
@@ -874,6 +946,10 @@
     document.addEventListener('MSFullscreenChange',        onFsChange);
     player  .addEventListener('webkitbeginfullscreen',     onFsChange);
     player  .addEventListener('webkitendfullscreen',       onFsChange);
+
+    // Початковий стан іконки: на телефоні Telegram-фулскрін уже активний
+    // з моменту запуску, тож кнопка одразу має показувати «згорнути».
+    syncFsIcon();
 })();
 </script>
 </body>
