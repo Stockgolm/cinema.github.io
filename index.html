@@ -411,7 +411,12 @@
         return;
     }
     try {
-        qualities = JSON.parse(atob(dataParam));
+        // UTF-8-safe base64 decode (atob дає latin1 → кирилиця ламається на «кракозябри»).
+        let b64 = dataParam.replace(/-/g, '+').replace(/_/g, '/');
+        const bin = atob(b64);
+        const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+        const json = new TextDecoder('utf-8').decode(bytes);
+        qualities = JSON.parse(json);
         if (!qualities || !Object.keys(qualities).length) throw 0;
     } catch {
         showError('Невірний формат даних');
@@ -595,10 +600,15 @@
 
     /* ── Loader ── */
     function setLoading(on) { loader.classList.toggle('hidden', !on); }
-    player.addEventListener('waiting',   () => setLoading(true));
-    player.addEventListener('playing',   () => setLoading(false));
-    player.addEventListener('canplay',   () => setLoading(false));
-    player.addEventListener('loadstart', () => setLoading(true));
+    player.addEventListener('waiting',      () => setLoading(true));
+    player.addEventListener('playing',      () => setLoading(false));
+    player.addEventListener('canplay',      () => setLoading(false));
+    player.addEventListener('canplaythrough', () => setLoading(false));
+    player.addEventListener('loadeddata',   () => setLoading(false));
+    player.addEventListener('loadstart',    () => setLoading(true));
+    // Автоплей часто заблокований → відео на паузі, 'playing' не настає.
+    // Ховаємо спінер щойно є достатньо даних, і показуємо контроли для ручного play.
+    player.addEventListener('pause',        () => { if (player.readyState >= 2) setLoading(false); showControls(); });
     player.addEventListener('error', () => {
         const m = {1:'Завантаження перервано.',2:'Помилка мережі.',3:'Помилка декодування.',4:'Формат не підтримується.'};
         showError(m[player.error?.code] || 'Невідома помилка.');
@@ -632,18 +642,22 @@
     function showControls() {
         controls.classList.add('visible');
         clearTimeout(uiTimer);
+        // Автоприховування ТІЛЬКИ під час відтворення. На паузі контроли завжди видно.
         if (!player.paused && !menuOpen) {
-            uiTimer = setTimeout(() => { if (!menuOpen) controls.classList.remove('visible'); }, 3500);
+            uiTimer = setTimeout(() => {
+                if (!menuOpen && !player.paused) controls.classList.remove('visible');
+            }, 3500);
         }
     }
     function hideControls() {
-        if (menuOpen) return;
+        if (menuOpen || player.paused) return;   // на паузі не ховаємо
         controls.classList.remove('visible');
     }
 
     /* Mouse movement shows controls on desktop */
     wrapper.addEventListener('mousemove', () => { if (!isTouch) showControls(); });
-    wrapper.addEventListener('mouseleave', () => { if (!isTouch && !menuOpen) hideControls(); });
+    wrapper.addEventListener('mouseenter', () => { if (!isTouch) showControls(); });
+    wrapper.addEventListener('mouseleave', () => { if (!isTouch && !menuOpen && !player.paused) hideControls(); });
 
     /* Click on video area (not controls) */
     wrapper.addEventListener('click', (e) => {
