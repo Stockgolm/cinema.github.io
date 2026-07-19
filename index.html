@@ -450,20 +450,41 @@
         hideError();
         updateQualityUI(label);
         if (hls) { hls.destroy(); hls = null; }
-        if (url.includes('.m3u8') && Hls.isSupported()) {
-            hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 600, enableWorker: true });
-            hls.loadSource(url);
-            hls.attachMedia(player);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => restorePlayback(savedTime, wasPlaying));
-            hls.on(Hls.Events.ERROR, (_e, d) => {
-                if (d.fatal) showError(d.type === Hls.ErrorTypes.NETWORK_ERROR
-                    ? "Помилка мережі. Перевірте з'єднання."
-                    : 'Помилка відтворення потоку.');
-            });
+
+        const isHls = url.includes('.m3u8');
+        // NATIVE-FIRST: рідне HLS у <video> вантажить сегменти без заголовка Origin,
+        // тому CORS не блокує (ashdi віддає ACAO лише власному домену). hls.js робить
+        // CORS-запити й на таких CDN падає з "Помилка мережі".
+        const nativeHls = player.canPlayType('application/vnd.apple.mpegurl')
+                       || player.canPlayType('application/x-mpegURL');
+
+        if (isHls && nativeHls) {
+            player.src = url;
+            player.addEventListener('loadedmetadata',
+                () => restorePlayback(savedTime, wasPlaying), { once: true });
+            // Якщо рідне відтворення впало — пробуємо hls.js.
+            player.addEventListener('error',
+                () => tryHlsJs(url, savedTime, wasPlaying), { once: true });
+        } else if (isHls && Hls.isSupported()) {
+            tryHlsJs(url, savedTime, wasPlaying);
         } else {
             player.src = url;
-            player.addEventListener('loadedmetadata', () => restorePlayback(savedTime, wasPlaying), { once: true });
+            player.addEventListener('loadedmetadata',
+                () => restorePlayback(savedTime, wasPlaying), { once: true });
         }
+    }
+
+    function tryHlsJs(url, savedTime, wasPlaying) {
+        if (hls) { hls.destroy(); hls = null; }
+        hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 600, enableWorker: true });
+        hls.loadSource(url);
+        hls.attachMedia(player);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => restorePlayback(savedTime, wasPlaying));
+        hls.on(Hls.Events.ERROR, (_e, d) => {
+            if (d.fatal) showError(d.type === Hls.ErrorTypes.NETWORK_ERROR
+                ? "Помилка мережі. Перевірте з'єднання."
+                : 'Помилка відтворення потоку.');
+        });
     }
 
     function restorePlayback(time, play) {
