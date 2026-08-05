@@ -366,7 +366,7 @@
     </div>
 
     <div id="kb-hint"></div>
-    <div id="ver-badge">player v10</div>
+    <div id="ver-badge">player v11</div>
     <div id="dbg-panel"></div>
 
     <div id="error-overlay">
@@ -555,6 +555,14 @@
     let hoverUI      = false;   // миша над панеллю → не ховати її таймером
     let fsWanted     = false;   // fullscreen просив користувач (для фолбеків/підказок)
 
+    /* ── CORS-проксі ──
+       ashdi віддає ACAO лише власному домену, тому hls.js (він робить CORS-XHR)
+       на Chromium/tdesktop падає з "Помилка мережі". Проксі тягне плейлист і
+       сегменти на боці сервера й додає ACAO:*. Порожній рядок = проксі вимкнено. */
+    const PROXY = '';
+    const viaProxy = (u) => PROXY ? PROXY + '?u=' + encodeURIComponent(u) : u;
+    const isProxied = (u) => !!PROXY && u.startsWith(PROXY);
+
     /* ── Parse URL ── */
     const dataParam = new URLSearchParams(window.location.search).get('data');
     if (!dataParam) {
@@ -565,6 +573,8 @@
     try {
         // UTF-8-safe base64 decode (atob дає latin1 → кирилиця ламається на «кракозябри»).
         let b64 = dataParam.replace(/-/g, '+').replace(/_/g, '/');
+        // base64url зазвичай без padding — відновлюємо, інакше atob може впасти.
+        if (b64.length % 4) b64 += '='.repeat(4 - (b64.length % 4));
         const bin = atob(b64);
         const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
         const json = new TextDecoder('utf-8').decode(bytes);
@@ -581,7 +591,14 @@
         item.className = 'qm-item';
         item.dataset.label = label;
         item.setAttribute('role', 'menuitem');
-        item.innerHTML = `<i class="ti ti-check qm-check" aria-hidden="true"></i><span>${label}</span>`;
+        // textContent, не innerHTML: label приходить із зовнішнього ?data= —
+        // назва якості з розміткою інакше виконалась би як HTML.
+        const check = document.createElement('i');
+        check.className = 'ti ti-check qm-check';
+        check.setAttribute('aria-hidden', 'true');
+        const text = document.createElement('span');
+        text.textContent = label;
+        item.append(check, text);
         item.addEventListener('click', (e) => {
             e.stopPropagation();
             loadVideo(label, true);
@@ -624,7 +641,9 @@
             player.addEventListener('error',
                 () => tryHlsJs(url, savedTime, wasPlaying), { once: true });
         } else if (isHls && typeof Hls !== 'undefined' && Hls.isSupported()) {
-            tryHlsJs(url, savedTime, wasPlaying);
+            // Chromium/tdesktop: рідного HLS немає, а прямий XHR ріже CORS →
+            // одразу через проксі (якщо він налаштований).
+            tryHlsJs(viaProxy(url), savedTime, wasPlaying);
         } else {
             // Або не-HLS, або hls.js не завантажився (CDN) — пробуємо напряму.
             dbg('load: direct src (Hls lib: ' + (typeof Hls !== 'undefined') + ')');
@@ -649,7 +668,14 @@
         hls.attachMedia(player);
         hls.on(Hls.Events.MANIFEST_PARSED, () => restorePlayback(savedTime, wasPlaying));
         hls.on(Hls.Events.ERROR, (_e, d) => {
-            if (d.fatal) showError(d.type === Hls.ErrorTypes.NETWORK_ERROR
+            if (!d.fatal) return;
+            // Мережева помилка на прямому URL — майже завжди CORS. Ретраїмо через проксі.
+            if (d.type === Hls.ErrorTypes.NETWORK_ERROR && PROXY && !isProxied(url)) {
+                dbg('network error → retry via proxy');
+                tryHlsJs(viaProxy(url), savedTime, wasPlaying);
+                return;
+            }
+            showError(d.type === Hls.ErrorTypes.NETWORK_ERROR
                 ? "Помилка мережі. Перевірте з'єднання."
                 : 'Помилка відтворення потоку.');
         });
@@ -1069,7 +1095,8 @@
     /* Бейдж версії: показує версію + платформу, гасне за 6с, але зона тапу
        лишається — тап по лівому верхньому куту відкриває діагностику. */
     const verBadge = document.getElementById('ver-badge');
-    verBadge.textContent = 'v10 · ' + (tgPlatform || 'browser') + ' ' + (tg?.version || '');
+    verBadge.textContent = 'v11 · ' + (tgPlatform || 'browser') + ' ' + (tg?.version || '')
+        + (PROXY ? ' · proxy' : '');
     verBadge.addEventListener('click', (e) => {
         e.stopPropagation();
         verBadge.classList.remove('fade');
