@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Player</title>
-    <!-- Не передавати серверу відео адресу цієї сторінки (Referer).
-         Сервер ashdi віддає сегменти лише «своєму» сайту або запитам без
-         Referer (так ходять програвачі на телефонах). Через це вбудований
-         HLS у Chrome/Edge/Telegram Desktop отримував відмову → «code=4». -->
-    <meta name="referrer" content="no-referrer">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
     <script>
@@ -333,7 +328,7 @@
     <div class="skip-flash" id="skip-fwd"><i class="ti ti-forward-10"></i><span>+10 сек</span></div>
 
     <div id="kb-hint"></div>
-    <div id="ver-badge">player v16</div>
+    <div id="ver-badge">player v17</div>
     <div id="dbg-panel"></div>
 
     <div id="error-overlay">
@@ -393,7 +388,7 @@
 <script>
 (function () {
     'use strict';
-    const VERSION = 'v16';
+    const VERSION = 'v17';
 
     /* ══════════════════════ CORS-проксі ══════════════════════
        Телефони (iOS/Android) і новий Chrome грають HLS «рідно» — без CORS.
@@ -402,7 +397,9 @@
        Тоді (і ТІЛЬКИ тоді) плеєр іде через публічний CORS-проксі зі списку,
        по черзі. Формат: префікс, до якого дописується закодована адреса.
        Список можна змінити/доповнити; порожній масив = проксі вимкнено. */
-    const PROXIES = [];   // публічні corsproxy.io / codetabs для ashdi не працюють (403 / тайм-аут)
+    /* Власний посередник на тому ж сайті (Cloudflare Pages: functions/proxy.js).
+       На GitHub Pages його немає — тоді просто буде повідомлення про помилку. */
+    const PROXIES = ['/proxy?u='];
     let proxyIdx = -1;   // -1 = напряму
     const PROXY = PROXIES.length ? 'on' : '';
     const proxyPrefix = () => proxyIdx >= 0 ? PROXIES[proxyIdx] : '';
