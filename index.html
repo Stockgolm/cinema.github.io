@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Player</title>
+    <!-- Не передавати серверу відео адресу цієї сторінки (Referer).
+         Сервер ashdi віддає сегменти лише «своєму» сайту або запитам без
+         Referer (так ходять програвачі на телефонах). Через це вбудований
+         HLS у Chrome/Edge/Telegram Desktop отримував відмову → «code=4». -->
+    <meta name="referrer" content="no-referrer">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
     <script>
@@ -316,32 +321,6 @@
         }
         #kb-hint.show { opacity: 1; }
 
-        /* Запасний режим: вбудований плеєр ashdi (коли браузер ПК не може
-           відкрити потік сам, а сервер не дозволяє hls.js з нашого домену). */
-        #embed {
-            position: absolute; inset: 0;
-            width: 100%; height: 100%;
-            border: 0; background: #000;
-            z-index: 40;
-        }
-        #wrapper.embed-mode video,
-        #wrapper.embed-mode #controls,
-        #wrapper.embed-mode #loader,
-        #wrapper.embed-mode #quality-menu,
-        #wrapper.embed-mode #error-overlay { display: none !important; }
-        #embed-fs {
-            position: absolute;
-            top: calc(8px + var(--tg-sa-top, 0px));
-            right: calc(8px + var(--tg-sa-right, 0px));
-            width: 36px; height: 36px;
-            display: none; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.55); color: #fff;
-            border: 1px solid rgba(255,255,255,0.2); border-radius: 8px;
-            font-size: 20px; cursor: pointer; z-index: 45;
-            opacity: 0.6; transition: opacity 0.2s;
-        }
-        #embed-fs:hover { opacity: 1; }
-        #wrapper.embed-mode #embed-fs.tg { display: flex; }
     </style>
 </head>
 <body>
@@ -354,8 +333,7 @@
     <div class="skip-flash" id="skip-fwd"><i class="ti ti-forward-10"></i><span>+10 сек</span></div>
 
     <div id="kb-hint"></div>
-    <button id="embed-fs" aria-label="Повний екран"><i class="ti ti-arrows-maximize"></i></button>
-    <div id="ver-badge">player v15</div>
+    <div id="ver-badge">player v16</div>
     <div id="dbg-panel"></div>
 
     <div id="error-overlay">
@@ -415,7 +393,7 @@
 <script>
 (function () {
     'use strict';
-    const VERSION = 'v15';
+    const VERSION = 'v16';
 
     /* ══════════════════════ CORS-проксі ══════════════════════
        Телефони (iOS/Android) і новий Chrome грають HLS «рідно» — без CORS.
@@ -961,50 +939,7 @@
     }
     function hideError() { errorOv.classList.remove('visible'); }
 
-    /* Номер відео ashdi є в самому посиланні: …_284313/hls/… → ashdi.vip/vod/284313 */
-    function ashdiEmbedUrl(u) {
-        try {
-            const x = new URL(u);
-            if (!/(^|\.)ashdi\.vip$/i.test(x.hostname)) return null;
-            const m = x.pathname.match(/_(\d+)\/hls\//);
-            return m ? 'https://ashdi.vip/vod/' + m[1] : null;
-        } catch { return null; }
-    }
-    let embedMode = false;
-    function showEmbed(src) {
-        embedMode = true;
-        dbg('embed: ' + src);
-        loadId++;                       // зупинити всі старі обробники
-        destroyHls();
-        try { player.pause(); } catch {}
-        engine = 'none';
-        player.removeAttribute('src');
-        try { player.load(); } catch {}
-        clearTimeout(uiTimer);
-        closeMenu();
-        hideError();
-        wrapper.classList.remove('hide-cursor');
-        wrapper.classList.add('embed-mode');
-        let f = document.getElementById('embed');
-        if (!f) {
-            f = document.createElement('iframe');
-            f.id = 'embed';
-            f.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
-            f.setAttribute('allowfullscreen', '');
-            f.setAttribute('referrerpolicy', 'origin');
-            wrapper.insertBefore(f, document.getElementById('kb-hint'));
-        }
-        f.src = src;
-        // Кнопка Telegram-фулскріну (вікно міні-апки) — тільки в Telegram.
-        embedFsBtn.classList.toggle('tg', fsMode === 'tg');
-        syncFsIcon();
-    }
-    const embedFsBtn = document.getElementById('embed-fs');
-    embedFsBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFs(); });
-
     function showCorsError() {
-        const emb = ashdiEmbedUrl(qualities[currentLabel] || '');
-        if (emb) { showEmbed(emb); return; }
         showError(inTg
             ? 'На цьому ПК Telegram не може відкрити це відео напряму (сервер відео не дозволяє).'
             : 'Цей браузер не може відкрити потік напряму (сервер відео не дозволяє).');
@@ -1039,7 +974,6 @@
 
     /* ══════════════════════ Показ/приховування панелі ══════════════════════ */
     function showControls() {
-        if (embedMode) return;
         controls.classList.add('visible');
         wrapper.classList.remove('hide-cursor');
         clearTimeout(uiTimer);
@@ -1110,7 +1044,6 @@
         showControls();
     }
     document.addEventListener('keydown', (e) => {
-        if (embedMode) return;
         if (e.target.tagName === 'INPUT' || e.ctrlKey || e.metaKey || e.altKey) return;
         switch (e.key) {
             case ' ': case 'k': case 'K': case 'л': case 'Л':
@@ -1236,8 +1169,6 @@
         const on = isFs();
         btnFs.innerHTML = on ? '<i class="ti ti-arrows-minimize"></i>' : '<i class="ti ti-arrows-maximize"></i>';
         btnFs.setAttribute('aria-label', on ? 'Вийти з повного екрана' : 'Повний екран');
-        const eb = document.getElementById('embed-fs');
-        if (eb) eb.innerHTML = btnFs.innerHTML;
     }
     btnFs.addEventListener('click', (e) => { e.stopPropagation(); toggleFs(); showControls(); });
 
