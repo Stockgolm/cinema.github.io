@@ -327,7 +327,7 @@
     <div class="skip-flash" id="skip-fwd"><i class="ti ti-forward-10"></i><span>+10 сек</span></div>
 
     <div id="kb-hint"></div>
-    <div id="ver-badge">player v12</div>
+    <div id="ver-badge">player v14</div>
     <div id="dbg-panel"></div>
 
     <div id="error-overlay">
@@ -387,16 +387,22 @@
 <script>
 (function () {
     'use strict';
-    const VERSION = 'v12';
+    const VERSION = 'v14';
 
     /* ══════════════════════ CORS-проксі ══════════════════════
        Телефони (iOS/Android) і новий Chrome грають HLS «рідно» — без CORS.
-       Старіші Chromium / Telegram Desktop на Windows (WebView2) рідного HLS не
-       мають → hls.js → сервер відео відповідає без дозволу CORS → «помилка
-       мережі». Це і є ті «деякі ПК». Вирішується тільки проксі (див. worker.js).
-       Порожній рядок = проксі вимкнено. Приклад: 'https://cinema-proxy.xxx.workers.dev/' */
-    const PROXY = '';
-    const viaProxy = (u) => PROXY ? PROXY + '?u=' + encodeURIComponent(u) : u;
+       Telegram Desktop на частині ПК рідного HLS не має → hls.js → сервер
+       відео не дозволяє такі запити з чужого сайту → «помилка мережі».
+       Тоді (і ТІЛЬКИ тоді) плеєр іде через публічний CORS-проксі зі списку,
+       по черзі. Формат: префікс, до якого дописується закодована адреса.
+       Список можна змінити/доповнити; порожній масив = проксі вимкнено. */
+    const PROXIES = [
+        'https://corsproxy.io/?url=',
+        'https://api.codetabs.com/v1/proxy?quest=',
+    ];
+    let proxyIdx = -1;   // -1 = напряму
+    const PROXY = PROXIES.length ? 'on' : '';
+    const proxyPrefix = () => proxyIdx >= 0 ? PROXIES[proxyIdx] : '';
 
     /* ══════════════════════ Діагностика ══════════════════════ */
     const dbgLog = [];
@@ -411,7 +417,7 @@
         p.textContent =
             'player ' + VERSION + '  platform=' + (tgPlatform || 'browser') + '  botAPI=' + (tg?.version || '-') +
             '\nfsMode=' + fsMode + '  isFs=' + isFs() + '  tg.isFullscreen=' + (tg ? String(tg.isFullscreen) : '-') +
-            '\nengine=' + engine + '  proxy=' + (PROXY ? (useProxy ? 'ON' : 'ready') : 'none') +
+            '\nengine=' + engine + '  proxy=' + (useProxy ? proxyPrefix() : 'off') +
             '  Hls=' + (typeof Hls !== 'undefined' ? (Hls.version || 'yes') : 'NO') +
             '\nnativeHLS=' + (player.canPlayType('application/vnd.apple.mpegurl') || '""') +
             '  viewport=' + window.innerWidth + 'x' + window.innerHeight +
@@ -456,7 +462,10 @@
     let lastGoodTime = 0;
     let lastFsToggle = 0;
     let fsBusy = false, fsBusyTimer = null, fsWanted = false, userToggledFs = false;
-    try { useProxy = !!PROXY && sessionStorage.getItem('cv_proxy') === '1'; } catch {}
+    try {
+        const saved = sessionStorage.getItem('cv_proxy_idx');
+        if (saved !== null && +saved < PROXIES.length) { proxyIdx = +saved; useProxy = proxyIdx >= 0; }
+    } catch {}
 
     /* ══════════════════════ Telegram ══════════════════════
        telegram-web-app.js підключений завжди, тому window.Telegram.WebApp
@@ -476,7 +485,11 @@
     const videoFsOk = typeof player.webkitEnterFullscreen === 'function';
     const tgFsOk = inTg && tgVerOk('8.0') && typeof tg.requestFullscreen === 'function';
     const fallbackFsMode = () => elFsOk ? 'element' : videoFsOk ? 'video' : 'none';
-    let fsMode = tgFsOk ? 'tg' : fallbackFsMode();
+    /* iPhone (немає fullscreen для елементів): кнопка відкриває системний
+       плеєр iOS — справжній повний екран з поворотом, як було у v11.
+       Telegram-фулскрін при старті лишається окремо (автоматично). */
+    const isIPhone = videoFsOk && !elFsOk;
+    let fsMode = isIPhone ? 'video' : tgFsOk ? 'tg' : fallbackFsMode();
 
     dbg('init: platform=' + (tgPlatform || 'browser') + ' botAPI=' + (tg?.version || '-') + ' fsMode=' + fsMode);
 
@@ -510,7 +523,7 @@
         // надісланий одразу при старті, тому — одна повторна спроба.
         if (isMobileTg && tgFsOk) {
             const autoFs = (left) => {
-                if (tg.isFullscreen || userToggledFs || fsMode !== 'tg') return;
+                if (tg.isFullscreen || userToggledFs) return;
                 try { tg.requestFullscreen(); dbg('auto tg.requestFullscreen (' + left + ')'); } catch (e) { dbg('auto fs: ' + (e.message || e)); return; }
                 if (left > 0) setTimeout(() => autoFs(left - 1), 1200);
             };
@@ -525,7 +538,7 @@
         if (!inTg) return;
         let gap = 0;
         const vh = tg.viewportHeight;
-        if (vh && !tg.isFullscreen) {
+        if (vh && !tg.isFullscreen && !tg.isExpanded) {
             gap = Math.round(window.innerHeight - vh);
             if (gap < 0 || gap > window.innerHeight * 0.8) gap = 0;
         }
@@ -654,13 +667,32 @@
         player.src = url;
     }
 
+    /* Завантажувач hls.js, що пропускає КОЖЕН запит (плейлисти, сегменти,
+       ключі) через проксі, але для hls.js адреса лишається оригінальною —
+       тож відносні шляхи в плейлисті розв'язуються правильно. */
+    function makeProxyLoader(prefix) {
+        const Base = Hls.DefaultConfig.loader;
+        return class ProxyLoader extends Base {
+            load(context, config, callbacks) {
+                const orig = context.url;
+                context.url = prefix + encodeURIComponent(orig);
+                const cb = Object.assign({}, callbacks, {
+                    onSuccess: (response, stats, ctx, nd) => {
+                        response.url = orig; ctx.url = orig;
+                        callbacks.onSuccess(response, stats, ctx, nd);
+                    },
+                });
+                super.load(context, config, cb);
+            }
+        };
+    }
+
     function startHlsJs(url, start, id, resumeHint) {
         destroyHls();
         triedHlsJs = true;
         engine = 'hlsjs';
-        const src = useProxy ? viaProxy(url) : url;
-        dbg('engine: hls.js' + (useProxy ? ' via proxy' : ''));
-        const h = hls = new Hls({
+        dbg('engine: hls.js' + (useProxy ? ' via proxy ' + proxyPrefix() : ''));
+        const cfg = {
             startPosition: start > 0 ? start : -1,
             maxBufferLength: 30,
             maxMaxBufferLength: 120,
@@ -669,7 +701,9 @@
             manifestLoadingMaxRetry: 1,
             levelLoadingMaxRetry: 4,
             fragLoadingMaxRetry: 6,
-        });
+        };
+        if (useProxy) cfg.loader = makeProxyLoader(proxyPrefix());
+        const h = hls = new Hls(cfg);
         h.on(Hls.Events.MANIFEST_PARSED, () => {
             if (id !== loadId) return;
             restorePlayback(0, resumeHint && start);   // позицію вже задав startPosition
@@ -683,11 +717,13 @@
             if (d.type === Hls.ErrorTypes.NETWORK_ERROR) {
                 const manifestStage = /manifest|level/i.test(d.details || '') && !player.currentTime;
                 const corsLike = manifestStage && (!d.response || d.response.code === 0);
-                // 1) Сервер не дав CORS → через проксі (і запам'ятати на сесію).
-                if (corsLike && PROXY && !useProxy) {
+                // 1) Сервер не дав CORS (або проксі не спрацював) → наступний
+                //    проксі зі списку; вдалий запам'ятовується на сесію.
+                if ((corsLike || (useProxy && manifestStage)) && proxyIdx + 1 < PROXIES.length) {
+                    proxyIdx++;
                     useProxy = true;
-                    try { sessionStorage.setItem('cv_proxy', '1'); } catch {}
-                    dbg('схоже на CORS → перемикаюсь на проксі');
+                    try { sessionStorage.setItem('cv_proxy_idx', String(proxyIdx)); } catch {}
+                    dbg('схоже на CORS → проксі #' + proxyIdx);
                     startHlsJs(url, start, id, resumeHint);
                     return;
                 }
@@ -707,6 +743,10 @@
                     setTimeout(() => { if (h === hls) h.startLoad(); }, delay);
                     return;
                 }
+                if (corsLike || (useProxy && manifestStage)) {
+                    try { sessionStorage.removeItem('cv_proxy_idx'); } catch {}
+                    showCorsError(); return;
+                }
                 showError(corsLike && !PROXY
                     ? 'Цей браузер не може відкрити потік напряму (сервер відео не дозволяє). Оновіть Chrome/Edge/Telegram або відкрийте на телефоні.'
                     : "Помилка мережі. Перевірте з'єднання.");
@@ -722,7 +762,7 @@
             showError('Помилка відтворення потоку.');
         });
         h.attachMedia(player);
-        h.loadSource(src);
+        h.loadSource(url);
     }
 
     function restorePlayback(time, resumeHint) {
@@ -759,6 +799,7 @@
             setTimeout(() => { if (id === loadId) { resetMedia(); startNative(url, at, id, 0, engine); } }, 1500 * netRetries);
             return;
         }
+        if (triedNativeLast) { showCorsError(); return; }
         if (triedNativeLast) {
             showError(PROXY
                 ? "Помилка мережі. Перевірте з'єднання."
@@ -893,6 +934,12 @@
         dbg('ERROR shown: ' + msg);
     }
     function hideError() { errorOv.classList.remove('visible'); }
+
+    function showCorsError() {
+        showError(inTg
+            ? 'На цьому ПК Telegram не може відкрити це відео напряму (сервер відео не дозволяє).'
+            : 'Цей браузер не може відкрити потік напряму (сервер відео не дозволяє).');
+    }
     // Повтор — з того ж місця, а не з нуля.
     retryBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1100,7 +1147,7 @@
             setFsBusy();
             try { const r = fn.call(document); if (r && r.catch) r.catch(() => clearFsBusy()); } catch { clearFsBusy(); }
         }
-        if (tg?.isFullscreen) {
+        if (fsMode === 'tg' && tg?.isFullscreen) {
             try { setFsBusy(); tg.exitFullscreen(); } catch (e) { clearFsBusy(); dbg('tg.exitFullscreen: ' + (e.message || e)); }
         }
         try { screen.orientation?.unlock?.(); } catch {}
@@ -1138,11 +1185,12 @@
     syncFsIcon();
 
     verBadge.textContent = VERSION + ' · ' + (tgPlatform || 'browser') + ' ' + (tg?.version && inTg ? tg.version : '')
-        + (PROXY ? ' · proxy' : '');
+        + (useProxy ? ' · proxy' : '');
     verBadge.addEventListener('click', (e) => { e.stopPropagation(); verBadge.classList.remove('fade'); toggleDbg(); });
     setTimeout(() => verBadge.classList.add('fade'), 6000);
 
-    const resumeAt = readResume();
+    const tParam = +new URLSearchParams(location.search).get('t') || 0;
+    const resumeAt = tParam || readResume();
     loadVideo(Object.keys(qualities)[0], { time: resumeAt, resumeHint: resumeAt });
     showControls();
     dbg('init done');
