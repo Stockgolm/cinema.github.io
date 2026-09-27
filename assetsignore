@@ -1,0 +1,6 @@
+proxy-worker.js
+wrangler.jsonc
+.assetsignore
+functions
+.git
+.github
