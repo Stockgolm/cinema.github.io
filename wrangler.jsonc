@@ -1,10 +1,10 @@
 {
-  // Налаштування Cloudflare Worker: код посередника + файли сайту.
   "name": "cinema-github-io",
-  "main": "proxy-worker.js",
+  "main": "worker.js",
   "compatibility_date": "2025-09-01",
   "assets": {
     "directory": "./",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "run_worker_first": true
   }
 }
