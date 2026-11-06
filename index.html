@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+ 
         html, body {
             height: 100%;
             background: #000;
@@ -24,7 +24,7 @@
             -webkit-tap-highlight-color: transparent;
             user-select: none;
         }
-
+ 
         /* Wrapper прибитий до країв вікна (fixed + inset), а не до висоти в px.
            Раніше висота бралась з tg.viewportStableHeight і могла «застрягти»
            на старому значенні після зміни режиму — плеєр то розгортався на весь
@@ -39,10 +39,10 @@
            спільному списку, браузер відкидає ВСЕ правило. */
         #wrapper:fullscreen          { inset: 0; width: 100%; height: 100%; }
         #wrapper:-webkit-full-screen { inset: 0; width: 100%; height: 100%; }
-
+ 
         #wrapper.hide-cursor,
         #wrapper.hide-cursor * { cursor: none !important; }
-
+ 
         video {
             width: 100%;
             height: 100%;
@@ -51,7 +51,7 @@
             background: #000;
             object-fit: contain;
         }
-
+ 
         /* ── Loader ── */
         #loader {
             position: absolute; inset: 0;
@@ -69,7 +69,7 @@
             animation: spin 0.75s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-
+ 
         /* ── Skip flash ── */
         .skip-flash {
             position: absolute; top: 50%;
@@ -84,7 +84,7 @@
         .skip-flash span { font-size: 13px; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
         #skip-back { left: 12%; }
         #skip-fwd  { right: 12%; }
-
+ 
         /* ── Error overlay ── */
         #error-overlay {
             position: absolute; inset: 0;
@@ -103,7 +103,7 @@
             font-size: 14px; font-weight: 600;
             cursor: pointer; touch-action: manipulation;
         }
-
+ 
         /* ── No-data ── */
         #no-data {
             position: absolute; inset: 0;
@@ -113,7 +113,7 @@
         }
         #no-data.visible { display: flex; }
         #no-data span { font-size: 15px; color: rgba(255,255,255,0.5); }
-
+ 
         /* ── Controls ── */
         #controls {
             position: absolute;
@@ -129,7 +129,7 @@
             z-index: 20;
         }
         #controls.visible { opacity: 1; pointer-events: auto; }
-
+ 
         #progress-wrap { padding: 14px 12px 8px; cursor: pointer; touch-action: none; }
         #progress-track {
             height: 3px;
@@ -157,9 +157,9 @@
             transition: transform 0.15s;
         }
         #controls:hover #progress-thumb { transform: translate(-50%, -50%) scale(1); }
-
+ 
         #btn-row { display: flex; align-items: center; padding: 0 4px; min-height: 44px; }
-
+ 
         .ctrl-btn {
             background: none; border: none; color: #fff;
             cursor: pointer;
@@ -175,10 +175,10 @@
         .ctrl-btn:hover  { background: rgba(255,255,255,0.1); }
         .ctrl-btn:active { background: rgba(255,255,255,0.2); }
         .ctrl-btn[hidden] { display: none; }
-
+ 
         #btn-back, #btn-fwd { display: none; }
         @media (pointer: coarse) { #btn-back, #btn-fwd { display: flex; } }
-
+ 
         #time-display {
             font-size: 12px;
             color: rgba(255,255,255,0.85);
@@ -188,7 +188,7 @@
             font-variant-numeric: tabular-nums;
         }
         .spacer { flex: 1; min-width: 8px; }
-
+ 
         #vol-wrap { display: flex; align-items: center; flex-shrink: 0; }
         #vol-slider-wrap {
             width: 0; overflow: hidden;
@@ -212,7 +212,7 @@
             width: 13px; height: 13px;
             border-radius: 50%; background: #fff; border: none; cursor: pointer;
         }
-
+ 
         #quality-btn {
             background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.18);
@@ -230,7 +230,7 @@
         #quality-btn.open  { background: #e50914; border-color: #e50914; }
         #quality-btn .q-arrow { font-size: 13px; transition: transform 0.2s; }
         #quality-btn.open .q-arrow { transform: rotate(180deg); }
-
+ 
         #quality-menu {
             position: absolute;
             bottom: 62px;
@@ -267,7 +267,7 @@
         .qm-item.active { color: #fff; }
         .qm-check { font-size: 15px; color: #e50914; visibility: hidden; flex-shrink: 0; }
         .qm-item.active .qm-check { visibility: visible; }
-
+ 
         /* Бейдж версії (тап → діагностика). Відступ зверху враховує кнопки
            Telegram у повноекранному режимі (--tg-sa-top). */
         #ver-badge {
@@ -282,7 +282,7 @@
             transition: opacity 1s;
         }
         #ver-badge.fade { opacity: 0; }
-
+ 
         #dbg-panel {
             position: absolute;
             top: calc(40px + var(--tg-sa-top, 0px));
@@ -301,7 +301,7 @@
             display: none;
             z-index: 60;
         }
-
+ 
         #kb-hint {
             position: absolute;
             bottom: 70px; left: 50%; transform: translateX(-50%);
@@ -315,37 +315,37 @@
             white-space: nowrap; z-index: 25;
         }
         #kb-hint.show { opacity: 1; }
-
+ 
     </style>
 </head>
 <body>
 <div id="wrapper">
     <video id="player" playsinline webkit-playsinline x5-playsinline autoplay preload="auto"></video>
-
+ 
     <div id="loader"><div class="spinner"></div></div>
-
+ 
     <div class="skip-flash" id="skip-back"><i class="ti ti-rewind-10"></i><span>−10 сек</span></div>
     <div class="skip-flash" id="skip-fwd"><i class="ti ti-forward-10"></i><span>+10 сек</span></div>
-
+ 
     <div id="kb-hint"></div>
-    <div id="ver-badge">player v17</div>
+    <div id="ver-badge">player v18</div>
     <div id="dbg-panel"></div>
-
+ 
     <div id="error-overlay">
         <i class="ov-icon ti ti-alert-triangle" aria-hidden="true"></i>
         <p id="error-msg">Не вдалося завантажити відео</p>
         <button id="retry-btn">Спробувати знову</button>
     </div>
-
+ 
     <div id="no-data">
         <i class="ov-icon ti ti-video-off" aria-hidden="true"></i>
         <span>Відео не знайдено</span>
     </div>
-
+ 
     <div id="quality-menu" role="menu" aria-label="Якість">
         <div id="quality-menu-title">Якість</div>
     </div>
-
+ 
     <div id="controls">
         <div id="progress-wrap" role="slider" aria-label="Прогрес">
             <div id="progress-track">
@@ -384,26 +384,25 @@
         </div>
     </div>
 </div>
-
+ 
 <script>
 (function () {
     'use strict';
-    const VERSION = 'v17';
-
+    const VERSION = 'v18';
+ 
     /* ══════════════════════ CORS-проксі ══════════════════════
        Телефони (iOS/Android) і новий Chrome грають HLS «рідно» — без CORS.
        Telegram Desktop на частині ПК рідного HLS не має → hls.js → сервер
-       відео не дозволяє такі запити з чужого сайту → «помилка мережі».
-       Тоді (і ТІЛЬКИ тоді) плеєр іде через публічний CORS-проксі зі списку,
-       по черзі. Формат: префікс, до якого дописується закодована адреса.
-       Список можна змінити/доповнити; порожній масив = проксі вимкнено. */
-    /* Власний посередник на тому ж сайті (Cloudflare Pages: functions/proxy.js).
-       На GitHub Pages його немає — тоді просто буде повідомлення про помилку. */
+       відео не дає CORS-заголовків → «помилка мережі» (code=0).
+       Тоді (і ТІЛЬКИ тоді) плеєр іде через посередника на тому ж сайті
+       (Cloudflare Worker: worker.js → /proxy). Справжній посередник завжди
+       додає заголовок X-Proxy-Status — за ним плеєр відрізняє робочий проксі
+       від «нема проксі» (GitHub Pages, 404, index.html замість відповіді).
+       Порожній масив = проксі вимкнено. */
     const PROXIES = ['/proxy?u='];
     let proxyIdx = -1;   // -1 = напряму
-    const PROXY = PROXIES.length ? 'on' : '';
     const proxyPrefix = () => proxyIdx >= 0 ? PROXIES[proxyIdx] : '';
-
+ 
     /* ══════════════════════ Діагностика ══════════════════════ */
     const dbgLog = [];
     function dbg(msg) {
@@ -417,7 +416,7 @@
         p.textContent =
             'player ' + VERSION + '  platform=' + (tgPlatform || 'browser') + '  botAPI=' + (tg?.version || '-') +
             '\nfsMode=' + fsMode + '  isFs=' + isFs() + '  tg.isFullscreen=' + (tg ? String(tg.isFullscreen) : '-') +
-            '\nengine=' + engine + '  proxy=' + (useProxy ? proxyPrefix() : 'off') +
+            '\nengine=' + engine + '  proxy=' + (useProxy ? proxyPrefix() : 'off') + '  played=' + everPlayed +
             '  Hls=' + (typeof Hls !== 'undefined' ? (Hls.version || 'yes') : 'NO') +
             '\nnativeHLS=' + (player.canPlayType('application/vnd.apple.mpegurl') || '""') +
             '  viewport=' + window.innerWidth + 'x' + window.innerHeight +
@@ -434,7 +433,7 @@
         dbg('JS ERROR: ' + (e.message || e.type) + ' [' + ((e.filename || '').split('/').pop()) + ':' + e.lineno + ']'));
     window.addEventListener('unhandledrejection', (e) =>
         dbg('PROMISE ERROR: ' + (e.reason?.message || e.reason)));
-
+ 
     /* ══════════════════════ DOM ══════════════════════ */
     const $ = (id) => document.getElementById(id);
     const player = $('player'), wrapper = $('wrapper'), loader = $('loader');
@@ -448,7 +447,7 @@
     const qualityBtn = $('quality-btn'), qualityLabel = $('quality-label'), qualityMenu = $('quality-menu');
     const skipBackEl = $('skip-back'), skipFwdEl = $('skip-fwd'), kbHint = $('kb-hint');
     const verBadge = $('ver-badge');
-
+ 
     /* ══════════════════════ Стан ══════════════════════ */
     let hls = null, qualities = {}, currentLabel = null;
     let uiTimer = null, menuOpen = false, scrubbing = false;
@@ -460,13 +459,17 @@
     let triedHlsJs = false, triedNativeLast = false;
     let netRetries = 0, mediaRetries = 0;
     let lastGoodTime = 0;
+    /* Чи відтворення вже реально пішло в цьому завантаженні. Раніше «початок»
+       визначався через !player.currentTime — але при продовженні перегляду
+       currentTime ненульовий ще до старту, і логіка CORS/проксі не спрацьовувала. */
+    let everPlayed = false;
     let lastFsToggle = 0;
     let fsBusy = false, fsBusyTimer = null, fsWanted = false, userToggledFs = false;
     try {
         const saved = sessionStorage.getItem('cv_proxy_idx');
-        if (saved !== null && +saved < PROXIES.length) { proxyIdx = +saved; useProxy = proxyIdx >= 0; }
+        if (saved !== null && +saved >= 0 && +saved < PROXIES.length) { proxyIdx = +saved; useProxy = true; }
     } catch {}
-
+ 
     /* ══════════════════════ Telegram ══════════════════════
        telegram-web-app.js підключений завжди, тому window.Telegram.WebApp
        існує і у звичайному браузері (platform='unknown'). Відрізняємо. */
@@ -475,7 +478,7 @@
     const inTg = !!tgPlatform;
     const isMobileTg = ['android', 'android_x', 'ios'].includes(tgPlatform);
     const tgVerOk = (v) => { try { return !!tg?.isVersionAtLeast?.(v); } catch { return false; } };
-
+ 
     /* Один режим fullscreen на всю сесію — без змішування (раніше на iPhone
        кнопка відкривала системний плеєр iOS, а при старті — Telegram-фулскрін,
        і стани плутались). */
@@ -490,15 +493,15 @@
        Telegram-фулскрін при старті лишається окремо (автоматично). */
     const isIPhone = videoFsOk && !elFsOk;
     let fsMode = isIPhone ? 'video' : tgFsOk ? 'tg' : fallbackFsMode();
-
+ 
     dbg('init: platform=' + (tgPlatform || 'browser') + ' botAPI=' + (tg?.version || '-') + ' fsMode=' + fsMode);
-
+ 
     if (inTg) {
         try { tg.ready(); } catch {}
         try { tg.expand(); } catch {}
         try { tg.setHeaderColor('#000000'); tg.setBackgroundColor('#000000'); } catch (e) { dbg('setColor: ' + (e.message || e)); }
         if (tgVerOk('7.7')) { try { tg.disableVerticalSwipes(); } catch (e) { dbg('disableVerticalSwipes: ' + (e.message || e)); } }
-
+ 
         tg.onEvent('viewportChanged', applyLayout);
         tg.onEvent('safeAreaChanged', applyLayout);
         tg.onEvent('contentSafeAreaChanged', applyLayout);
@@ -518,7 +521,7 @@
             }
             syncFsIcon();
         });
-
+ 
         // Телефон: автоматично на весь екран. Telegram інколи ігнорує запит,
         // надісланий одразу при старті, тому — одна повторна спроба.
         if (isMobileTg && tgFsOk) {
@@ -530,7 +533,7 @@
             setTimeout(() => autoFs(1), 60);
         }
     }
-
+ 
     /* Розміри та safe-area. Висоту більше не фіксуємо в px — лише відступ
        знизу, коли WebApp не розгорнутий і частина вебв'ю схована під екраном. */
     function applyLayout() {
@@ -551,7 +554,7 @@
     }
     applyLayout();
     window.addEventListener('resize', applyLayout);
-
+ 
     /* ══════════════════════ Дані з URL ══════════════════════ */
     const dataParam = new URLSearchParams(window.location.search).get('data');
     if (!dataParam) {
@@ -570,7 +573,7 @@
         showError('Невірний формат даних', false);
         return;
     }
-
+ 
     /* ══════════════════════ Продовження перегляду ══════════════════════ */
     const resumeKey = (() => {
         try { const u = new URL(Object.values(qualities)[0], location.href); return 'cv_pos:' + u.host + u.pathname; }
@@ -594,7 +597,7 @@
     }
     window.addEventListener('pagehide', () => saveResume(true));
     document.addEventListener('visibilitychange', () => { if (document.hidden) saveResume(true); });
-
+ 
     /* ══════════════════════ Меню якості ══════════════════════ */
     for (const label of Object.keys(qualities)) {
         const item = document.createElement('button');
@@ -615,7 +618,7 @@
         });
         qualityMenu.appendChild(item);
     }
-
+ 
     /* ══════════════════════ Завантаження відео ══════════════════════ */
     function isHlsUrl(u) { return /\.m3u8($|[?#])/i.test(u) || u.includes('.m3u8'); }
     function hostOf(u) { try { return new URL(u, location.href).host; } catch { return '?'; } }
@@ -623,7 +626,7 @@
         return !!(player.canPlayType('application/vnd.apple.mpegurl') || player.canPlayType('application/x-mpegURL'));
     }
     function hlsJsOk() { return typeof Hls !== 'undefined' && Hls.isSupported(); }
-
+ 
     function destroyHls() {
         if (hls) { try { hls.destroy(); } catch {} hls = null; }
     }
@@ -632,7 +635,7 @@
         player.removeAttribute('src');
         try { player.load(); } catch {}
     }
-
+ 
     /* opts.time — з якої секунди почати; opts.resumeHint — показати підказку */
     function loadVideo(label, opts = {}) {
         const url = qualities[label];
@@ -641,13 +644,14 @@
         currentLabel = label;
         triedHlsJs = false; triedNativeLast = false;
         netRetries = 0; mediaRetries = 0;
+        everPlayed = false;
         setLoading(true);
         hideError();
         updateQualityUI(label);
         resetMedia();
         const start = opts.time > 0 ? opts.time : 0;
-        dbg('load "' + label + '" host=' + hostOf(url) + ' t=' + Math.floor(start));
-
+        dbg('load "' + label + '" host=' + hostOf(url) + ' t=' + Math.floor(start) + (useProxy ? ' [proxy]' : ''));
+ 
         const isHls = isHlsUrl(url);
         if (isHls && canNativeHls() && !useProxy) startNative(url, start, id, opts.resumeHint);
         else if (isHls && hlsJsOk()) startHlsJs(url, start, id, opts.resumeHint);
@@ -656,7 +660,7 @@
             showError('Бібліотека відтворення не завантажилась. Перевірте інтернет і натисніть «Спробувати знову».');
         } else startNative(url, start, id, opts.resumeHint, 'direct');
     }
-
+ 
     function startNative(url, start, id, resumeHint, kind = 'native') {
         engine = kind;
         if (kind === 'native') triedNativeLast = true;   // повторно «напряму» не пробуємо
@@ -667,7 +671,7 @@
         }, { once: true });
         player.src = url;
     }
-
+ 
     /* Завантажувач hls.js, що пропускає КОЖЕН запит (плейлисти, сегменти,
        ключі) через проксі, але для hls.js адреса лишається оригінальною —
        тож відносні шляхи в плейлисті розв'язуються правильно. */
@@ -687,7 +691,43 @@
             }
         };
     }
-
+ 
+    /* Чи відповів саме наш посередник (а не 404/index.html хостингу). */
+    function proxyAnswered(xhr) {
+        try { return !!(xhr && xhr.readyState === 4 && xhr.getResponseHeader('x-proxy-status')); }
+        catch { return false; }
+    }
+    function proxyBroken(xhr) {
+        try { return !!(xhr && xhr.readyState === 4 && !xhr.getResponseHeader('x-proxy-status')); }
+        catch { return false; }
+    }
+ 
+    function httpErrorText(code) {
+        if (code === 401 || code === 403)
+            return 'Сервер відео відхилив запит (' + code + '). Посилання могло застаріти — відкрийте фільм у боті ще раз.';
+        if (code === 404 || code === 410)
+            return 'Відео не знайдено на сервері (' + code + '). Посилання застаріло — відкрийте фільм у боті ще раз.';
+        if (code === 429)
+            return 'Сервер відео тимчасово обмежив запити (429). Спробуйте за хвилину.';
+        return 'Сервер відео повернув помилку ' + code + '. Спробуйте пізніше.';
+    }
+ 
+    function switchToNextProxy(url, start, id, resumeHint, why) {
+        if (proxyIdx + 1 >= PROXIES.length) return false;
+        proxyIdx++;
+        useProxy = true;
+        try { sessionStorage.setItem('cv_proxy_idx', String(proxyIdx)); } catch {}
+        dbg(why + ' → проксі #' + proxyIdx + ' ' + PROXIES[proxyIdx]);
+        netRetries = 0;
+        startHlsJs(url, start, id, resumeHint);
+        return true;
+    }
+    function dropProxy() {
+        proxyIdx = -1;
+        useProxy = false;
+        try { sessionStorage.removeItem('cv_proxy_idx'); } catch {}
+    }
+ 
     function startHlsJs(url, start, id, resumeHint) {
         destroyHls();
         triedHlsJs = true;
@@ -713,44 +753,63 @@
         h.on(Hls.Events.ERROR, (_e, d) => {
             if (id !== loadId || h !== hls) return;
             if (!d.fatal) return;
-            dbg('hls fatal: ' + d.type + ' / ' + d.details + ' code=' + (d.response?.code ?? '-'));
-
+            const code = d.response?.code ?? 0;
+            const xhr = d.networkDetails;
+            dbg('hls fatal: ' + d.type + ' / ' + d.details + ' code=' + code
+                + (useProxy ? ' proxyHdr=' + proxyAnswered(xhr) + ' up=' + (proxyAnswered(xhr) ? xhr.getResponseHeader('x-proxy-status') : '-') : ''));
+ 
             if (d.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                const manifestStage = /manifest|level/i.test(d.details || '') && !player.currentTime;
-                const corsLike = manifestStage && (!d.response || d.response.code === 0);
-                // 1) Сервер не дав CORS (або проксі не спрацював) → наступний
-                //    проксі зі списку; вдалий запам'ятовується на сесію.
-                if ((corsLike || (useProxy && manifestStage)) && proxyIdx + 1 < PROXIES.length) {
-                    proxyIdx++;
-                    useProxy = true;
-                    try { sessionStorage.setItem('cv_proxy_idx', String(proxyIdx)); } catch {}
-                    dbg('схоже на CORS → проксі #' + proxyIdx);
-                    startHlsJs(url, start, id, resumeHint);
+                const early = !everPlayed;
+ 
+                // 1) Ми через проксі, але відповів не він (GitHub Pages, 404,
+                //    index.html замість плейлиста) → наступний проксі або чесне повідомлення.
+                if (early && useProxy && proxyBroken(xhr)) {
+                    dbg('проксі не відповідає як проксі');
+                    if (switchToNextProxy(url, start, id, resumeHint, 'мертвий проксі')) return;
+                    dropProxy();
+                    showError(inTg
+                        ? 'На цьому ПК Telegram не може відкрити відео напряму, а посередник (/proxy) на сайті не працює.'
+                        : 'Браузер не може відкрити потік напряму, а посередник (/proxy) на сайті не працює.');
                     return;
                 }
-                // 2) Проксі нема — остання спроба: віддати посилання браузеру напряму.
+ 
+                // 2) Сервер відео відповів HTTP-помилкою (напряму або через проксі).
+                //    Це не CORS — обходити тут нічого, показуємо причину.
+                if (early && code >= 400) {
+                    showError(httpErrorText(code));
+                    return;
+                }
+ 
+                // 3) code=0 напряму = CORS (сервер не дав заголовків) — на будь-якому
+                //    етапі: плейлисти, сегменти, ключі. Раніше тільки на маніфесті.
+                const corsLike = early && code === 0 && !useProxy
+                    && !/timeout/i.test(d.details || '');
+                if (corsLike && switchToNextProxy(url, start, id, resumeHint, 'схоже на CORS (' + d.details + ')')) return;
+ 
+                // 4) Проксі нема — остання спроба: віддати посилання браузеру напряму.
                 if (corsLike && !triedNativeLast) {
                     triedNativeLast = true;
                     destroyHls();
                     startNative(url, start, id, resumeHint, 'direct');
                     return;
                 }
-                // 3) Звичайний збій мережі під час перегляду → кілька повторів.
-                if (!manifestStage && netRetries < 4) {
+                if (corsLike) { showCorsError(); return; }
+ 
+                // 5) Тимчасовий збій мережі → кілька повторів.
+                if (netRetries < 4) {
                     netRetries++;
                     const delay = 1000 * netRetries;
-                    dbg('мережа: повтор ' + netRetries + ' через ' + delay + 'мс');
+                    dbg('мережа: повтор ' + netRetries + ' через ' + delay + 'мс' + (early ? ' (повний перезапуск)' : ''));
                     setLoading(true);
-                    setTimeout(() => { if (h === hls) h.startLoad(); }, delay);
+                    if (early) {
+                        // до старту фатальна помилка маніфесту/плейлиста startLoad не лікує
+                        setTimeout(() => { if (id === loadId) startHlsJs(url, start, id, resumeHint); }, delay);
+                    } else {
+                        setTimeout(() => { if (h === hls) h.startLoad(); }, delay);
+                    }
                     return;
                 }
-                if (corsLike || (useProxy && manifestStage)) {
-                    try { sessionStorage.removeItem('cv_proxy_idx'); } catch {}
-                    showCorsError(); return;
-                }
-                showError(corsLike && !PROXY
-                    ? 'Цей браузер не може відкрити потік напряму (сервер відео не дозволяє). Оновіть Chrome/Edge/Telegram або відкрийте на телефоні.'
-                    : "Помилка мережі. Перевірте з'єднання.");
+                showError("Помилка мережі. Перевірте з'єднання.");
                 return;
             }
             if (d.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRetries < 2) {
@@ -765,7 +824,7 @@
         h.attachMedia(player);
         h.loadSource(url);
     }
-
+ 
     function restorePlayback(time, resumeHint) {
         if (time > 0 && (!isFinite(player.duration) || time < player.duration - 5)) {
             try { player.currentTime = time; } catch {}
@@ -777,46 +836,42 @@
             player.play().catch(() => { showControls(); });
         });
     }
-
-    // Єдиний обробник помилок <video> (раніше їх було два: один показував
-    // помилку, другий паралельно перемикав на hls.js — оверлей лишався).
+ 
+    // Єдиний обробник помилок <video> (рідний HLS і прямі файли).
+    // hls.js звітує сам через Hls.Events.ERROR.
     player.addEventListener('error', () => {
-        if (engine === 'hlsjs' || engine === 'none') return;   // hls.js звітує сам
+        if (engine === 'hlsjs' || engine === 'none') return;
         if (!player.getAttribute('src')) return;               // це наш reset
         const code = player.error?.code;
-        dbg('video error code=' + code + ' engine=' + engine);
+        dbg('video error code=' + code + ' engine=' + engine + ' msg=' + (player.error?.message || '-'));
         const id = loadId, url = qualities[currentLabel];
         const at = player.currentTime || lastGoodTime;
-        // Рідний HLS не впорався → hls.js.
+        // Рідний HLS не впорався → hls.js (він покаже справжній HTTP-код).
         if (engine === 'native' && !triedHlsJs && hlsJsOk() && isHlsUrl(url)) {
             resetMedia();
-            startHlsJs(url, at, id);
+            startHlsJs(url, at, id, 0);
             return;
         }
         // Обрив мережі посеред фільму → тихо перезапустити з того ж місця.
-        if (code === 2 && netRetries < 3) {
+        if (code === 2 && everPlayed && netRetries < 3) {
             netRetries++;
             setLoading(true);
-            setTimeout(() => { if (id === loadId) { resetMedia(); startNative(url, at, id, 0, engine); } }, 1500 * netRetries);
+            const kind = engine;
+            setTimeout(() => { if (id === loadId) { resetMedia(); startNative(url, at, id, 0, kind); } }, 1500 * netRetries);
             return;
         }
-        if (triedNativeLast) { showCorsError(); return; }
-        if (triedNativeLast) {
-            showError(PROXY
-                ? "Помилка мережі. Перевірте з'єднання."
-                : 'Цей браузер не може відкрити потік напряму (сервер відео не дозволяє). Оновіть Chrome/Edge/Telegram або відкрийте на телефоні.');
-            return;
-        }
+        // Пряме відкриття після невдалого hls.js — це був останній шанс.
+        if (engine === 'direct' && !everPlayed && isHlsUrl(url)) { showCorsError(); return; }
         const m = {1:'Завантаження перервано.', 2:"Помилка мережі. Перевірте з'єднання.", 3:'Помилка декодування.', 4:'Формат не підтримується цим браузером.'};
         showError(m[code] || 'Невідома помилка.');
     });
-
+ 
     function updateQualityUI(label) {
         qualityLabel.textContent = label;
         qualityMenu.querySelectorAll('.qm-item').forEach(el =>
             el.classList.toggle('active', el.dataset.label === label));
     }
-
+ 
     /* ══════════════════════ Час і прогрес ══════════════════════ */
     function fmt(s) {
         s = Math.floor(isFinite(s) ? s : 0);
@@ -842,7 +897,7 @@
         }
         progressBuf.style.width = (end / player.duration * 100) + '%';
     });
-
+ 
     /* ══════════════════════ Перемотування ══════════════════════ */
     function scrubAt(clientX) {
         const rect = progressWrap.getBoundingClientRect();
@@ -863,7 +918,7 @@
     document.addEventListener('mouseup', () => { scrubbing = false; });
     document.addEventListener('touchend', () => { scrubbing = false; });
     document.addEventListener('touchcancel', () => { scrubbing = false; });
-
+ 
     /* ══════════════════════ Play / Pause ══════════════════════ */
     function togglePlay() {
         if (player.paused) player.play().catch(() => {});
@@ -878,7 +933,7 @@
         showControls();
     });
     player.addEventListener('ended', () => { try { resumeKey && localStorage.removeItem(resumeKey); } catch {} });
-
+ 
     /* ══════════════════════ ±10 сек ══════════════════════ */
     function flashSkip(el, key) {
         el.classList.add('show');
@@ -893,7 +948,7 @@
     }
     btnBack.addEventListener('click', (e) => { e.stopPropagation(); skipBy(-10); });
     btnFwd .addEventListener('click', (e) => { e.stopPropagation(); skipBy(+10); });
-
+ 
     /* ══════════════════════ Гучність ══════════════════════ */
     function updateVolIcon() {
         const off = player.muted || player.volume === 0;
@@ -917,16 +972,19 @@
     volSlider.addEventListener('mousedown',  (e) => e.stopPropagation());
     volSlider.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
     player.addEventListener('volumechange', updateVolIcon);
-
+ 
     /* ══════════════════════ Лоадер і помилки ══════════════════════ */
     function setLoading(on) { loader.classList.toggle('hidden', !on); }
     player.addEventListener('waiting',        () => setLoading(true));
-    player.addEventListener('playing',        () => { setLoading(false); netRetries = 0; });
+    player.addEventListener('playing',        () => {
+        setLoading(false); netRetries = 0;
+        if (!everPlayed) { everPlayed = true; dbg('playing (engine=' + engine + (useProxy ? ', proxy' : '') + ')'); }
+    });
     player.addEventListener('canplay',        () => setLoading(false));
     player.addEventListener('canplaythrough', () => setLoading(false));
     player.addEventListener('loadeddata',     () => setLoading(false));
     player.addEventListener('loadstart',      () => { if (player.getAttribute('src')) setLoading(true); });
-
+ 
     function showError(msg, canRetry = true) {
         setLoading(false);
         errorMsg.textContent = msg;
@@ -935,7 +993,7 @@
         dbg('ERROR shown: ' + msg);
     }
     function hideError() { errorOv.classList.remove('visible'); }
-
+ 
     function showCorsError() {
         showError(inTg
             ? 'На цьому ПК Telegram не може відкрити це відео напряму (сервер відео не дозволяє).'
@@ -951,7 +1009,7 @@
         dbg('online');
         if (errorOv.classList.contains('visible') && currentLabel) loadVideo(currentLabel, { time: lastGoodTime });
     });
-
+ 
     /* ══════════════════════ Меню якості ══════════════════════ */
     function openMenu() {
         menuOpen = true;
@@ -968,7 +1026,7 @@
         menuOpen ? closeMenu() : openMenu();
         showControls();
     });
-
+ 
     /* ══════════════════════ Показ/приховування панелі ══════════════════════ */
     function showControls() {
         controls.classList.add('visible');
@@ -994,10 +1052,10 @@
     document.addEventListener('mousemove', () => { if (!justTouched) showControls(); });
     controls.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') { hoverUI = true;  showControls(); } });
     controls.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') { hoverUI = false; showControls(); } });
-
+ 
     const isUiTarget = (t) => controls.contains(t) || qualityMenu.contains(t)
         || errorOv.contains(t) || t.closest?.('#ver-badge, #dbg-panel');
-
+ 
     /* Миша: клік = пауза/відтворення, подвійний клік = fullscreen */
     wrapper.addEventListener('click', (e) => {
         if (isUiTarget(e.target)) return;
@@ -1011,7 +1069,7 @@
         toggleFs();
         showControls();
     });
-
+ 
     /* Тач: тап = показати/сховати, подвійний тап = ±10 сек */
     let tapTimer = null, tapCount = 0, tapSide = null;
     wrapper.addEventListener('touchend', (e) => {
@@ -1031,7 +1089,7 @@
             tapCount = 0;
         }, 250);
     });
-
+ 
     /* ══════════════════════ Клавіатура ══════════════════════ */
     function showKbHint(text) {
         kbHint.textContent = text;
@@ -1069,7 +1127,7 @@
                 closeMenu(); break;
         }
     });
-
+ 
     /* ══════════════════════ Fullscreen ══════════════════════
        Режим обирається один раз (fsMode):
          tg      — Telegram Bot API 8.0+: tg.requestFullscreen() (єдине, що
@@ -1084,7 +1142,7 @@
         fsBusyTimer = setTimeout(() => { fsBusy = false; syncFsIcon(); }, 1500);
     }
     function clearFsBusy() { fsBusy = false; clearTimeout(fsBusyTimer); }
-
+ 
     function isFs() {
         if (fsMode === 'video') return !!player.webkitDisplayingFullscreen;
         if (fsMode === 'tg') return !!tg.isFullscreen || !!fsElement();
@@ -1099,7 +1157,7 @@
         lastFsToggle = now;
         isFs() ? exitFs() : enterFs(false);
     }
-
+ 
     function enterFs(isFallback) {
         fsWanted = true;
         dbg('enterFs mode=' + fsMode + (isFallback ? ' (fallback)' : ''));
@@ -1136,7 +1194,7 @@
         }
         showKbHint('Повний екран недоступний');
     }
-
+ 
     function exitFs() {
         fsWanted = false;
         dbg('exitFs mode=' + fsMode);
@@ -1153,14 +1211,14 @@
         }
         try { screen.orientation?.unlock?.(); } catch {}
     }
-
+ 
     // Телефон у браузері: у повноекранному режимі повертаємо в альбомну.
     function lockLandscape() {
         if (!matchMedia('(pointer: coarse)').matches) return;
         if (player.videoWidth && player.videoWidth < player.videoHeight) return;
         try { screen.orientation?.lock?.('landscape').catch(() => {}); } catch {}
     }
-
+ 
     function syncFsIcon() {
         btnFs.hidden = fsMode === 'none';
         const on = isFs();
@@ -1168,7 +1226,7 @@
         btnFs.setAttribute('aria-label', on ? 'Вийти з повного екрана' : 'Повний екран');
     }
     btnFs.addEventListener('click', (e) => { e.stopPropagation(); toggleFs(); showControls(); });
-
+ 
     function onFsChange() {
         dbg('fsChange: element=' + !!fsElement() + ' video=' + !!player.webkitDisplayingFullscreen);
         if (fsMode !== 'tg' || !tg.isFullscreen) clearFsBusy();
@@ -1179,17 +1237,17 @@
     document.addEventListener('webkitfullscreenchange', onFsChange);
     player.addEventListener('webkitbeginfullscreen',    onFsChange);
     player.addEventListener('webkitendfullscreen',      onFsChange);
-
+ 
     /* ══════════════════════ Старт ══════════════════════ */
     player.volume = 0.15;
     updateVolIcon();
     syncFsIcon();
-
+ 
     verBadge.textContent = VERSION + ' · ' + (tgPlatform || 'browser') + ' ' + (tg?.version && inTg ? tg.version : '')
         + (useProxy ? ' · proxy' : '');
     verBadge.addEventListener('click', (e) => { e.stopPropagation(); verBadge.classList.remove('fade'); toggleDbg(); });
     setTimeout(() => verBadge.classList.add('fade'), 6000);
-
+ 
     const tParam = +new URLSearchParams(location.search).get('t') || 0;
     const resumeAt = tParam || readResume();
     loadVideo(Object.keys(qualities)[0], { time: resumeAt, resumeHint: resumeAt });
